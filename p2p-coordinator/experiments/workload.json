@@ -1,0 +1,28 @@
+{
+  "scenarios": [
+    {
+      "name": "Single Peer Fetch",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "file_1" }
+      ]
+    },
+    {
+      "name": "Locality Test",
+      "description": "peer-a1 has file, peer-a2 (same building) should fetch from a1, peer-b1 (diff building) handles it too",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "file_locality" },
+        { "action": "fetch", "peer": "peer-a2", "object_id": "file_locality" },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "file_locality" }
+      ]
+    },
+    {
+      "name": "Churn Test",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "churn_file" },
+        { "action": "kill", "peer": "peer-a1" },
+        { "action": "wait", "seconds": 15 },
+        { "action": "fetch", "peer": "peer-a2", "object_id": "churn_file" }
+      ]
+    }
+  ]
+}

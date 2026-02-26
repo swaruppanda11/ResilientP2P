@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  coordinator:
+    build:
+      context: .
+      dockerfile: coordinator/Dockerfile
+    ports:
+      - "8000:8000"
+    networks:
+      - p2p_network
+
+  origin:
+    build:
+      context: .
+      dockerfile: origin/Dockerfile
+    ports:
+      - "8001:8001"
+    networks:
+      - p2p_network
+
+  peer-a1:
+    build:
+      context: .
+      dockerfile: peer/Dockerfile
+    environment:
+      - PEER_ID=peer-a1
+      - LOCATION_ID=Building-A
+      - COORDINATOR_URL=http://coordinator:8000
+      - ORIGIN_URL=http://origin:8001
+    ports:
+      - "7001:7000"
+    depends_on:
+      - coordinator
+      - origin
+    networks:
+      - p2p_network
+
+  peer-a2:
+    build:
+      context: .
+      dockerfile: peer/Dockerfile
+    environment:
+      - PEER_ID=peer-a2
+      - LOCATION_ID=Building-A
+      - COORDINATOR_URL=http://coordinator:8000
+      - ORIGIN_URL=http://origin:8001
+    ports:
+      - "7002:7000"
+    depends_on:
+      - coordinator
+      - origin
+    networks:
+      - p2p_network
+
+  peer-b1:
+    build:
+      context: .
+      dockerfile: peer/Dockerfile
+    environment:
+      - PEER_ID=peer-b1
+      - LOCATION_ID=Building-B
+      - COORDINATOR_URL=http://coordinator:8000
+      - ORIGIN_URL=http://origin:8001
+    ports:
+      - "7003:7000"
+    depends_on:
+      - coordinator
+      - origin
+    networks:
+      - p2p_network
+
+networks:
+  p2p_network:
+    driver: bridge
