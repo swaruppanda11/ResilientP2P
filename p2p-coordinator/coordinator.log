@@ -1,0 +1,51 @@
+{"timestamp":"2026-03-01T13:04:24.297866","service":"coordinator","level":"INFO","event":"peer_registered","details":{"peer_id":"peer-a1","location_id":"Building-A","url":"http://127.0.0.1:7001"}}
+INFO:     127.0.0.1:58843 - "POST /register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58843 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58847 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58848 - "GET /stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58855 - "POST /heartbeat HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:04:46.430089","service":"coordinator","level":"INFO","event":"object_lookup","details":{"object_id":"test-object-1","location_id":"Building-A","provider_count":0}}
+INFO:     127.0.0.1:58855 - "GET /lookup/test-object-1?location_id=Building-A HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:04:46.447906","service":"coordinator","level":"INFO","event":"object_lookup","details":{"object_id":"test-object-1","location_id":"Building-A","provider_count":0}}
+INFO:     127.0.0.1:58859 - "GET /lookup/test-object-1?location_id=Building-A HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58860 - "GET /stats HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:04:46.578176","service":"coordinator","level":"INFO","event":"object_published","details":{"peer_id":"peer-a1","object_id":"test-object-1","size_bytes":1048576}}
+INFO:     127.0.0.1:58855 - "POST /publish HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56004 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56005 - "GET /stats HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:04:56.179289","service":"coordinator","level":"INFO","event":"object_published","details":{"peer_id":"peer-a1","object_id":"manual-test","size_bytes":1}}
+INFO:     127.0.0.1:56006 - "POST /publish HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56012 - "POST /heartbeat HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:05:12.483672","service":"coordinator","level":"INFO","event":"object_published","details":{"peer_id":"peer-a1","object_id":"test-object-1","size_bytes":1048576}}
+INFO:     127.0.0.1:56017 - "POST /publish HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:05:13.045860","service":"coordinator","level":"INFO","event":"peer_registered","details":{"peer_id":"peer-a2","location_id":"Building-A","url":"http://127.0.0.1:7002"}}
+INFO:     127.0.0.1:56018 - "POST /register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56018 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56019 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56026 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56027 - "POST /heartbeat HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:05:25.004461","service":"coordinator","level":"INFO","event":"object_lookup","details":{"object_id":"test-object-1","location_id":"Building-A","provider_count":1}}
+INFO:     127.0.0.1:56028 - "GET /lookup/test-object-1?location_id=Building-A HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:05:25.120815","service":"coordinator","level":"INFO","event":"object_lookup","details":{"object_id":"test-object-1","location_id":"Building-A","provider_count":1}}
+INFO:     127.0.0.1:56026 - "GET /lookup/test-object-1?location_id=Building-A HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:05:25.153127","service":"coordinator","level":"INFO","event":"object_published","details":{"peer_id":"peer-a2","object_id":"test-object-1","size_bytes":1048576}}
+INFO:     127.0.0.1:56026 - "POST /publish HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56036 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56038 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56039 - "GET /stats HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:05:35.620772","service":"coordinator","level":"INFO","event":"object_lookup","details":{"object_id":"test-object-1","location_id":"Building-A","provider_count":2}}
+INFO:     127.0.0.1:56040 - "GET /lookup/test-object-1?location_id=Building-A HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51848 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51849 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65326 - "POST /heartbeat HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:65327 - "POST /publish HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:65328 - "POST /register HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:65329 - "POST /publish HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:50302 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50304 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50306 - "POST /register HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:50307 - "POST /publish HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50308 - "POST /heartbeat HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50309 - "POST /publish HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:50311 - "POST /heartbeat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50313 - "POST /heartbeat HTTP/1.1" 200 OK

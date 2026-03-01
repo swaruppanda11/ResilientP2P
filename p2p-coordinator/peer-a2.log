@@ -1,0 +1,5 @@
+{"timestamp":"2026-03-01T13:05:13.047882","service":"peer:peer-a2","level":"INFO","event":"peer_register_success","details":{"peer_id":"peer-a2"}}
+METRIC: {"timestamp":"2026-03-01T13:05:25.156671","source_peer":"peer-a2","event_type":"PEER_FETCH","object_id":"test-object-1","latency_ms":36.36884689331055,"location_id":"Building-A"}
+INFO:     127.0.0.1:56029 - "GET /trigger-fetch/test-object-1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56032 - "GET /health HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:06:15.077385","service":"peer:peer-a2","level":"ERROR","event":"peer_heartbeat_failed","details":{"peer_id":"peer-a2","error":"All connection attempts failed"}}
