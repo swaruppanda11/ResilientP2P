@@ -2,11 +2,12 @@ import httpx
 import time
 import logging
 from typing import Optional
+
 from common.config import get_peer_settings
 from common.logging import get_logger, log_event
 from common.schemas import ObjectMetadata, RegisterRequest, PublishRequest, LookupResponse, HeartbeatRequest
 from common.metrics import log_metric, MetricEvent
-from peer.cache import Cache
+from peer.cache import Cache, CacheWriteResult
 
 class PeerClient:
     def __init__(self, peer_id: str, location_id: str, coordinator_url: str, origin_url: str, cache: Cache):
@@ -54,8 +55,11 @@ class PeerClient:
             )
 
     async def fetch_object(self, object_id: str) -> Optional[bytes]:
+        start_time = time.perf_counter()
+
         # 1. Check local cache
-        if self.cache.has(object_id):
+        cached_data = self.cache.get(object_id)
+        if cached_data is not None:
             log_event(
                 self.logger,
                 logging.INFO,
@@ -63,9 +67,28 @@ class PeerClient:
                 peer_id=self.peer_id,
                 object_id=object_id,
             )
-            return self.cache.get(object_id)
+            cache_stats = self.cache.get_stats()
+            log_metric(MetricEvent(
+                source_peer=self.peer_id,
+                event_type="CACHE_HIT",
+                object_id=object_id,
+                latency_ms=(time.perf_counter() - start_time) * 1000,
+                location_id=self.location_id,
+                bytes_transferred=len(cached_data),
+                provider_peer=self.peer_id,
+                cache_capacity_bytes=cache_stats["capacity_bytes"],
+                cache_size_bytes=cache_stats["current_size_bytes"],
+                cache_object_count=cache_stats["object_count"],
+            ))
+            return cached_data
 
-        start_time = time.time()
+        log_metric(MetricEvent(
+            source_peer=self.peer_id,
+            event_type="CACHE_MISS",
+            object_id=object_id,
+            latency_ms=(time.perf_counter() - start_time) * 1000,
+            location_id=self.location_id,
+        ))
 
         # 2. Lookup in Coordinator
         providers = []
@@ -80,6 +103,14 @@ class PeerClient:
             lookup = LookupResponse(**resp.json())
             providers = lookup.providers
             metadata = lookup.metadata
+            log_metric(MetricEvent(
+                source_peer=self.peer_id,
+                event_type="LOOKUP_RESULT",
+                object_id=object_id,
+                latency_ms=(time.perf_counter() - start_time) * 1000,
+                location_id=self.location_id,
+                candidate_count=len(providers),
+            ))
         except Exception as e:
             log_event(
                 self.logger,
@@ -89,6 +120,13 @@ class PeerClient:
                 object_id=object_id,
                 error=str(e),
             )
+            log_metric(MetricEvent(
+                source_peer=self.peer_id,
+                event_type="LOOKUP_FAILURE",
+                object_id=object_id,
+                latency_ms=(time.perf_counter() - start_time) * 1000,
+                location_id=self.location_id,
+            ))
 
         # 3. Try Peers
         for peer_url in providers:
@@ -104,18 +142,23 @@ class PeerClient:
                 
                 # Store in cache and publish
                 if metadata:
-                    self.cache.put(metadata, data)
-                    await self.publish(metadata)
+                    write_result = self.cache.put(metadata, data)
+                    self._log_cache_write_metrics(object_id, write_result)
+                    if write_result.stored:
+                        await self.publish(metadata)
                     
-                    latency = (time.time() - start_time) * 1000
-                    log_metric(MetricEvent(
-                        source_peer=self.peer_id,
-                        event_type="PEER_FETCH",
-                        object_id=object_id,
-                        latency_ms=latency,
-                        location_id=self.location_id
-                    ))
-                    return data
+                latency = (time.perf_counter() - start_time) * 1000
+                log_metric(MetricEvent(
+                    source_peer=self.peer_id,
+                    event_type="PEER_FETCH",
+                    object_id=object_id,
+                    latency_ms=latency,
+                    location_id=self.location_id,
+                    bytes_transferred=len(data),
+                    provider_peer=peer_url,
+                    candidate_count=len(providers),
+                ))
+                return data
             except Exception as e:
                 log_event(
                     self.logger,
@@ -139,16 +182,20 @@ class PeerClient:
                 checksum=res["checksum"],
                 size_bytes=res["size"]
             )
-            self.cache.put(meta, data)
-            await self.publish(meta)
+            write_result = self.cache.put(meta, data)
+            self._log_cache_write_metrics(object_id, write_result)
+            if write_result.stored:
+                await self.publish(meta)
 
-            latency = (time.time() - start_time) * 1000
+            latency = (time.perf_counter() - start_time) * 1000
             log_metric(MetricEvent(
                 source_peer=self.peer_id,
                 event_type="ORIGIN_FETCH",
                 object_id=object_id,
                 latency_ms=latency,
-                location_id=self.location_id
+                location_id=self.location_id,
+                bytes_transferred=len(data),
+                provider_peer=self.origin_url,
             ))
             return data
         except Exception as e:
@@ -177,3 +224,20 @@ class PeerClient:
                 object_id=metadata.object_id,
                 error=str(e),
             )
+
+    def _log_cache_write_metrics(self, object_id: str, write_result: CacheWriteResult) -> None:
+        cache_stats = self.cache.get_stats()
+        event_type = "CACHE_STORE" if write_result.stored else "CACHE_REJECTED"
+        log_metric(MetricEvent(
+            source_peer=self.peer_id,
+            event_type=event_type,
+            object_id=object_id,
+            latency_ms=0.0,
+            location_id=self.location_id,
+            bytes_transferred=write_result.object_size_bytes if write_result.stored else 0,
+            evicted_bytes=write_result.evicted_bytes,
+            evicted_count=len(write_result.evicted_object_ids),
+            cache_capacity_bytes=cache_stats["capacity_bytes"],
+            cache_size_bytes=cache_stats["current_size_bytes"],
+            cache_object_count=cache_stats["object_count"],
+        ))

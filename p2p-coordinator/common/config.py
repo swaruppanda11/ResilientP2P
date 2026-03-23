@@ -39,6 +39,7 @@ class PeerSettings(CommonSettings):
     origin_url: str
     host: str
     port: int
+    cache_capacity_bytes: int
     service_name: str = "peer"
 
 
@@ -78,4 +79,5 @@ def get_peer_settings() -> PeerSettings:
         origin_url=os.getenv("ORIGIN_URL", "http://origin:8001"),
         host=os.getenv("PEER_HOST", peer_id),
         port=_get_int("PEER_PORT", 7000),
+        cache_capacity_bytes=_get_int("CACHE_CAPACITY_BYTES", 10 * 1024 * 1024),
     )

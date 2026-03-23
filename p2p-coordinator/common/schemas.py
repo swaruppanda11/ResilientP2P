@@ -63,6 +63,20 @@ class CoordinatorStatsResponse(BaseModel):
     peer_timeout_seconds: int
 
 
+class PeerStatsResponse(BaseModel):
+    status: str
+    service: str
+    peer_id: str
+    location_id: str
+    cache_capacity_bytes: int
+    cache_size_bytes: int
+    cache_object_count: int
+    cache_hit_count: int
+    cache_miss_count: int
+    cache_eviction_count: int
+    cache_rejected_write_count: int
+
+
 class ErrorResponse(BaseModel):
     detail: str
     error_code: str

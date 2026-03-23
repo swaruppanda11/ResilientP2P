@@ -5,7 +5,7 @@ import os
 
 from common.config import get_peer_settings
 from common.logging import get_logger, log_event
-from common.schemas import HealthResponse
+from common.schemas import HealthResponse, PeerStatsResponse
 from peer.cache import Cache
 from peer.client import PeerClient
 from contextlib import asynccontextmanager
@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 settings = get_peer_settings()
 logger = get_logger(f"{settings.service_name}:{settings.peer_id}")
 
-cache = Cache()
+cache = Cache(capacity_bytes=settings.cache_capacity_bytes)
 client = PeerClient(
     settings.peer_id,
     settings.location_id,
@@ -72,3 +72,21 @@ async def trigger_fetch(object_id: str):
 @app.get("/health", response_model=HealthResponse)
 async def health():
     return HealthResponse(status="ok", service=f"{settings.service_name}:{settings.peer_id}")
+
+
+@app.get("/stats", response_model=PeerStatsResponse)
+async def stats():
+    cache_stats = cache.get_stats()
+    return PeerStatsResponse(
+        status="ok",
+        service=f"{settings.service_name}:{settings.peer_id}",
+        peer_id=settings.peer_id,
+        location_id=settings.location_id,
+        cache_capacity_bytes=cache_stats["capacity_bytes"],
+        cache_size_bytes=cache_stats["current_size_bytes"],
+        cache_object_count=cache_stats["object_count"],
+        cache_hit_count=cache_stats["hit_count"],
+        cache_miss_count=cache_stats["miss_count"],
+        cache_eviction_count=cache_stats["eviction_count"],
+        cache_rejected_write_count=cache_stats["rejected_write_count"],
+    )
