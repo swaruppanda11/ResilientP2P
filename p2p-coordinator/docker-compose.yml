@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: coordinator/Dockerfile
+    environment:
+      - PROVIDER_SELECTION_POLICY=locality_then_load
     ports:
       - "8000:8000"
     networks:

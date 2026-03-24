@@ -17,6 +17,13 @@ def _get_float(name: str, default: float) -> float:
     return float(value)
 
 
+def _get_str(name: str, default: str) -> str:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value
+
+
 @dataclass(frozen=True)
 class CommonSettings:
     heartbeat_interval_seconds: int
@@ -28,6 +35,7 @@ class CommonSettings:
 
 @dataclass(frozen=True)
 class CoordinatorSettings(CommonSettings):
+    provider_selection_policy: str
     service_name: str = "coordinator"
 
 
@@ -61,6 +69,7 @@ def get_coordinator_settings() -> CoordinatorSettings:
         cleanup_interval_seconds=common.cleanup_interval_seconds,
         max_providers_per_lookup=common.max_providers_per_lookup,
         lookup_timeout_seconds=common.lookup_timeout_seconds,
+        provider_selection_policy=_get_str("PROVIDER_SELECTION_POLICY", "locality_then_load"),
     )
 
 

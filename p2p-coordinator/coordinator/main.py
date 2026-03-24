@@ -17,6 +17,8 @@ from common.schemas import (
     PublishResponse,
     RegisterRequest,
     RegisterResponse,
+    TransferReportRequest,
+    TransferReportResponse,
 )
 from coordinator.store import (
     DuplicatePeerError,
@@ -28,7 +30,10 @@ import asyncio
 
 settings = get_coordinator_settings()
 logger = get_logger(settings.service_name)
-store = Store(max_providers_per_lookup=settings.max_providers_per_lookup)
+store = Store(
+    max_providers_per_lookup=settings.max_providers_per_lookup,
+    provider_selection_policy=settings.provider_selection_policy,
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -135,6 +140,31 @@ async def heartbeat(req: HeartbeatRequest):
     return HeartbeatResponse(status="ok", peer_id=req.peer_id)
 
 
+@app.post(
+    "/report-transfer",
+    response_model=TransferReportResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+async def report_transfer(req: TransferReportRequest):
+    load = store.report_transfer(req.peer_id, req.object_id, req.bytes_served)
+    log_event(
+        logger,
+        logging.INFO,
+        "transfer_reported",
+        peer_id=req.peer_id,
+        object_id=req.object_id,
+        bytes_served=req.bytes_served,
+        total_upload_requests=load.total_upload_requests,
+        total_upload_bytes=load.total_upload_bytes,
+    )
+    return TransferReportResponse(
+        status="ok",
+        peer_id=req.peer_id,
+        total_upload_requests=load.total_upload_requests,
+        total_upload_bytes=load.total_upload_bytes,
+    )
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health():
     return HealthResponse(status="ok", service=settings.service_name)
@@ -151,4 +181,8 @@ async def stats():
         provider_entries=data["provider_entries"],
         max_providers_per_lookup=data["max_providers_per_lookup"],
         peer_timeout_seconds=settings.peer_timeout_seconds,
+        provider_selection_policy=data["provider_selection_policy"],
+        total_upload_requests=data["total_upload_requests"],
+        total_upload_bytes=data["total_upload_bytes"],
+        peer_loads=data["peer_loads"],
     )

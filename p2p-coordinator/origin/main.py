@@ -3,6 +3,8 @@ import asyncio
 import hashlib
 import time
 
+from common.schemas import HealthResponse
+
 app = FastAPI(title="Origin Server")
 
 # Helper to generate deterministic data based on object_id
@@ -37,3 +39,8 @@ async def get_metadata(object_id: str):
         "checksum": checksum,
         "size_bytes": len(content)
     }
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health():
+    return HealthResponse(status="ok", service="origin")

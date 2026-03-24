@@ -5,7 +5,7 @@ import os
 
 from common.config import get_peer_settings
 from common.logging import get_logger, log_event
-from common.schemas import HealthResponse, PeerStatsResponse
+from common.schemas import HealthResponse, PeerFetchResponse, PeerStatsResponse
 from peer.cache import Cache
 from peer.client import PeerClient
 from contextlib import asynccontextmanager
@@ -53,6 +53,7 @@ async def get_object(object_id: str):
         object_id=object_id,
         size_bytes=len(data),
     )
+    await client.report_transfer(object_id, len(data))
     return {"content_hex": data.hex()}
 
 @app.post("/suicide")
@@ -61,12 +62,28 @@ async def suicide():
     print("Suicide requested. Stopping peer...")
     os._exit(0)
 
-@app.get("/trigger-fetch/{object_id}")
+@app.get("/trigger-fetch/{object_id}", response_model=PeerFetchResponse)
 async def trigger_fetch(object_id: str):
-    data = await client.fetch_object(object_id)
-    if data:
-        return {"status": "success", "size": len(data)}
-    return {"status": "failed"}
+    result = await client.fetch_object(object_id)
+    if result:
+        return PeerFetchResponse(
+            status="success",
+            object_id=object_id,
+            source=result.source,
+            size=result.size,
+            latency_ms=result.latency_ms,
+            candidate_count=result.candidate_count,
+            provider=result.provider,
+        )
+    return PeerFetchResponse(
+        status="failed",
+        object_id=object_id,
+        source="none",
+        size=0,
+        latency_ms=0.0,
+        candidate_count=0,
+        provider=None,
+    )
 
 
 @app.get("/health", response_model=HealthResponse)

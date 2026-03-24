@@ -13,6 +13,13 @@ class PeerInfo(BaseModel):
     location_id: str  # Simulated Subnet/Building ID
     last_seen: datetime
 
+
+class PeerLoadStats(BaseModel):
+    peer_id: str
+    total_upload_requests: int = 0
+    total_upload_bytes: int = 0
+    last_transfer_at: Optional[datetime] = None
+
 class RegisterRequest(BaseModel):
     peer_id: str
     host: str
@@ -32,6 +39,12 @@ class HeartbeatRequest(BaseModel):
     peer_id: str
 
 
+class TransferReportRequest(BaseModel):
+    peer_id: str
+    object_id: str
+    bytes_served: int
+
+
 class RegisterResponse(BaseModel):
     status: str
     peer_id: str
@@ -48,6 +61,13 @@ class HeartbeatResponse(BaseModel):
     peer_id: str
 
 
+class TransferReportResponse(BaseModel):
+    status: str
+    peer_id: str
+    total_upload_requests: int
+    total_upload_bytes: int
+
+
 class HealthResponse(BaseModel):
     status: str
     service: str
@@ -61,6 +81,10 @@ class CoordinatorStatsResponse(BaseModel):
     provider_entries: int
     max_providers_per_lookup: int
     peer_timeout_seconds: int
+    provider_selection_policy: str
+    total_upload_requests: int
+    total_upload_bytes: int
+    peer_loads: List[PeerLoadStats]
 
 
 class PeerStatsResponse(BaseModel):
@@ -75,6 +99,16 @@ class PeerStatsResponse(BaseModel):
     cache_miss_count: int
     cache_eviction_count: int
     cache_rejected_write_count: int
+
+
+class PeerFetchResponse(BaseModel):
+    status: str
+    object_id: str
+    source: str
+    size: int
+    latency_ms: float
+    candidate_count: int = 0
+    provider: Optional[str] = None
 
 
 class ErrorResponse(BaseModel):

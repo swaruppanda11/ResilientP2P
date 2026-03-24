@@ -1,13 +1,34 @@
 import httpx
 import time
 import logging
+import asyncio
+from dataclasses import dataclass
 from typing import Optional
 
 from common.config import get_peer_settings
 from common.logging import get_logger, log_event
-from common.schemas import ObjectMetadata, RegisterRequest, PublishRequest, LookupResponse, HeartbeatRequest
+from common.schemas import (
+    HeartbeatRequest,
+    LookupResponse,
+    ObjectMetadata,
+    PublishRequest,
+    RegisterRequest,
+    TransferReportRequest,
+)
 from common.metrics import log_metric, MetricEvent
 from peer.cache import Cache, CacheWriteResult
+
+
+@dataclass(frozen=True)
+class FetchResult:
+    object_id: str
+    source: str
+    size: int
+    latency_ms: float
+    candidate_count: int = 0
+    provider: Optional[str] = None
+    data: Optional[bytes] = None
+
 
 class PeerClient:
     def __init__(self, peer_id: str, location_id: str, coordinator_url: str, origin_url: str, cache: Cache):
@@ -19,8 +40,13 @@ class PeerClient:
         self.settings = get_peer_settings()
         self.logger = get_logger(f"{self.settings.service_name}:{self.peer_id}")
         self.http_client = httpx.AsyncClient(timeout=10.0)
+        self.host = self.settings.host
+        self.port = self.settings.port
+        self._register_lock = asyncio.Lock()
 
     async def register(self, host: str, port: int):
+        self.host = host
+        self.port = port
         req = RegisterRequest(
             peer_id=self.peer_id,
             host=host,
@@ -45,6 +71,17 @@ class PeerClient:
         try:
             resp = await self.http_client.post(f"{self.coordinator_url}/heartbeat", json=req.dict())
             resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                await self._re_register_with_coordinator(reason="heartbeat_unknown_peer")
+                return
+            log_event(
+                self.logger,
+                logging.ERROR,
+                "peer_heartbeat_failed",
+                peer_id=self.peer_id,
+                error=str(e),
+            )
         except Exception as e:
             log_event(
                 self.logger,
@@ -54,7 +91,7 @@ class PeerClient:
                 error=str(e),
             )
 
-    async def fetch_object(self, object_id: str) -> Optional[bytes]:
+    async def fetch_object(self, object_id: str) -> Optional[FetchResult]:
         start_time = time.perf_counter()
 
         # 1. Check local cache
@@ -80,7 +117,15 @@ class PeerClient:
                 cache_size_bytes=cache_stats["current_size_bytes"],
                 cache_object_count=cache_stats["object_count"],
             ))
-            return cached_data
+            return FetchResult(
+                object_id=object_id,
+                source="cache",
+                size=len(cached_data),
+                latency_ms=(time.perf_counter() - start_time) * 1000,
+                candidate_count=0,
+                provider=self.peer_id,
+                data=cached_data,
+            )
 
         log_metric(MetricEvent(
             source_peer=self.peer_id,
@@ -158,7 +203,15 @@ class PeerClient:
                     provider_peer=peer_url,
                     candidate_count=len(providers),
                 ))
-                return data
+                return FetchResult(
+                    object_id=object_id,
+                    source="peer",
+                    size=len(data),
+                    latency_ms=latency,
+                    candidate_count=len(providers),
+                    provider=peer_url,
+                    data=data,
+                )
             except Exception as e:
                 log_event(
                     self.logger,
@@ -197,7 +250,15 @@ class PeerClient:
                 bytes_transferred=len(data),
                 provider_peer=self.origin_url,
             ))
-            return data
+            return FetchResult(
+                object_id=object_id,
+                source="origin",
+                size=len(data),
+                latency_ms=latency,
+                candidate_count=len(providers),
+                provider=self.origin_url,
+                data=data,
+            )
         except Exception as e:
             log_event(
                 self.logger,
@@ -215,6 +276,20 @@ class PeerClient:
         try:
             resp = await self.http_client.post(f"{self.coordinator_url}/publish", json=req.dict())
             resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                await self._re_register_with_coordinator(reason="publish_unknown_peer")
+                retry_resp = await self.http_client.post(f"{self.coordinator_url}/publish", json=req.dict())
+                retry_resp.raise_for_status()
+                return
+            log_event(
+                self.logger,
+                logging.ERROR,
+                "publish_failed",
+                peer_id=self.peer_id,
+                object_id=metadata.object_id,
+                error=str(e),
+            )
         except Exception as e:
             log_event(
                 self.logger,
@@ -222,6 +297,47 @@ class PeerClient:
                 "publish_failed",
                 peer_id=self.peer_id,
                 object_id=metadata.object_id,
+                error=str(e),
+            )
+
+    async def report_transfer(self, object_id: str, bytes_served: int) -> None:
+        req = TransferReportRequest(
+            peer_id=self.peer_id,
+            object_id=object_id,
+            bytes_served=bytes_served,
+        )
+        try:
+            resp = await self.http_client.post(
+                f"{self.coordinator_url}/report-transfer",
+                json=req.dict(),
+            )
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                await self._re_register_with_coordinator(reason="transfer_report_unknown_peer")
+                retry_resp = await self.http_client.post(
+                    f"{self.coordinator_url}/report-transfer",
+                    json=req.dict(),
+                )
+                retry_resp.raise_for_status()
+                return
+            log_event(
+                self.logger,
+                logging.WARNING,
+                "transfer_report_failed",
+                peer_id=self.peer_id,
+                object_id=object_id,
+                bytes_served=bytes_served,
+                error=str(e),
+            )
+        except Exception as e:
+            log_event(
+                self.logger,
+                logging.WARNING,
+                "transfer_report_failed",
+                peer_id=self.peer_id,
+                object_id=object_id,
+                bytes_served=bytes_served,
                 error=str(e),
             )
 
@@ -241,3 +357,31 @@ class PeerClient:
             cache_size_bytes=cache_stats["current_size_bytes"],
             cache_object_count=cache_stats["object_count"],
         ))
+
+    async def _re_register_with_coordinator(self, reason: str) -> None:
+        async with self._register_lock:
+            log_event(
+                self.logger,
+                logging.WARNING,
+                "peer_re_registering",
+                peer_id=self.peer_id,
+                reason=reason,
+            )
+            await self.register(self.host, self.port)
+            for metadata in self.cache.metadata.values():
+                try:
+                    req = PublishRequest(peer_id=self.peer_id, metadata=metadata)
+                    resp = await self.http_client.post(
+                        f"{self.coordinator_url}/publish",
+                        json=req.dict(),
+                    )
+                    resp.raise_for_status()
+                except Exception as e:
+                    log_event(
+                        self.logger,
+                        logging.WARNING,
+                        "peer_republish_failed",
+                        peer_id=self.peer_id,
+                        object_id=metadata.object_id,
+                        error=str(e),
+                    )

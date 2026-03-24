@@ -1,27 +1,139 @@
 {
+  "seed": 42,
+  "compose_file": "../docker-compose.yml",
+  "coordinator_url": "http://localhost:8000",
+  "origin_url": "http://localhost:8001",
+  "results_dir": "results",
+  "bootstrap_wait_seconds": 4,
+  "service_ready_timeout_seconds": 45,
+  "reset_stack_before_each_scenario": true,
+  "peer_map": {
+    "peer-a1": {
+      "url": "http://localhost:7001",
+      "service": "peer-a1",
+      "location_id": "Building-A"
+    },
+    "peer-a2": {
+      "url": "http://localhost:7002",
+      "service": "peer-a2",
+      "location_id": "Building-A"
+    },
+    "peer-b1": {
+      "url": "http://localhost:7003",
+      "service": "peer-b1",
+      "location_id": "Building-B"
+    }
+  },
   "scenarios": [
     {
-      "name": "Single Peer Fetch",
+      "name": "Explicit Locality Smoke Test",
+      "description": "Simple deterministic run for sanity checking coordinator lookup and peer transfer.",
       "steps": [
-        { "action": "fetch", "peer": "peer-a1", "object_id": "file_1" }
+        { "action": "fetch", "peer": "peer-a1", "object_id": "lecture-1-video" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "fetch", "peer": "peer-a2", "object_id": "lecture-1-video" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "lecture-1-video" }
       ]
     },
     {
-      "name": "Locality Test",
-      "description": "peer-a1 has file, peer-a2 (same building) should fetch from a1, peer-b1 (diff building) handles it too",
-      "steps": [
-        { "action": "fetch", "peer": "peer-a1", "object_id": "file_locality" },
-        { "action": "fetch", "peer": "peer-a2", "object_id": "file_locality" },
-        { "action": "fetch", "peer": "peer-b1", "object_id": "file_locality" }
+      "name": "Course Burst Workload",
+      "description": "Students in the same course request overlapping content during a short burst window.",
+      "duration_seconds": 18,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": ["peer-a1", "peer-a2"],
+          "objects": [
+            { "id": "csci5673-assignment-1", "weight": 5 },
+            { "id": "csci5673-lecture-5", "weight": 3 },
+            { "id": "csci5673-reading-2", "weight": 2 }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 8,
+          "count": 16
+        },
+        {
+          "kind": "random_uniform",
+          "peers": ["peer-b1"],
+          "objects": [
+            { "id": "campus-news", "weight": 2 },
+            { "id": "csci5673-assignment-1", "weight": 1 }
+          ],
+          "start_seconds": 4,
+          "end_seconds": 16,
+          "count": 6
+        }
       ]
     },
     {
-      "name": "Churn Test",
-      "steps": [
-        { "action": "fetch", "peer": "peer-a1", "object_id": "churn_file" },
-        { "action": "kill", "peer": "peer-a1" },
-        { "action": "wait", "seconds": 15 },
-        { "action": "fetch", "peer": "peer-a2", "object_id": "churn_file" }
+      "name": "Burst With Independent Churn",
+      "description": "One peer drops during an active course burst and rejoins later.",
+      "duration_seconds": 24,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": ["peer-a1", "peer-a2", "peer-b1"],
+          "objects": [
+            { "id": "midterm-review", "weight": 4 },
+            { "id": "practice-set", "weight": 3 },
+            { "id": "formula-sheet", "weight": 1 }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 14,
+          "count": 20
+        }
+      ],
+      "churn": [
+        {
+          "kind": "independent",
+          "peers": ["peer-a2", "peer-b1"],
+          "count": 1,
+          "start_seconds": 5,
+          "end_seconds": 9,
+          "downtime_seconds": 6
+        }
+      ]
+    },
+    {
+      "name": "Correlated Class Exit Churn",
+      "description": "Two peers leave together to emulate a class ending, then return after a short downtime.",
+      "duration_seconds": 26,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": ["peer-a1", "peer-a2"],
+          "objects": [
+            { "id": "project-demo", "weight": 4 },
+            { "id": "lab-starter", "weight": 2 }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 10,
+          "count": 12
+        },
+        {
+          "kind": "random_uniform",
+          "peers": ["peer-a1", "peer-a2", "peer-b1"],
+          "objects": [
+            { "id": "project-demo", "weight": 3 },
+            { "id": "department-calendar", "weight": 1 }
+          ],
+          "start_seconds": 10,
+          "end_seconds": 22,
+          "count": 10
+        }
+      ],
+      "churn": [
+        {
+          "kind": "correlated",
+          "events": [
+            {
+              "at_seconds": 11,
+              "peers": ["peer-a1", "peer-a2"],
+              "downtime_seconds": 6
+            }
+          ]
+        }
       ]
     }
   ]
