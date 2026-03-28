@@ -1,0 +1,140 @@
+{
+  "seed": 42,
+  "compose_file": "../docker-compose.yml",
+  "coordinator_url": "http://localhost:8000",
+  "origin_url": "http://localhost:8001",
+  "results_dir": "results",
+  "bootstrap_wait_seconds": 6,
+  "service_ready_timeout_seconds": 60,
+  "reset_stack_before_each_scenario": true,
+  "peer_map": {
+    "peer-a1": {
+      "url": "http://localhost:7001",
+      "service": "peer-a1",
+      "location_id": "Building-A"
+    },
+    "peer-a2": {
+      "url": "http://localhost:7002",
+      "service": "peer-a2",
+      "location_id": "Building-A"
+    },
+    "peer-b1": {
+      "url": "http://localhost:7003",
+      "service": "peer-b1",
+      "location_id": "Building-B"
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Explicit Locality Smoke Test",
+      "description": "Sanity check: peer-a1 fetches from origin, peer-a2 should find it via DHT (same building), peer-b1 via DHT (cross-building).",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "lecture-1-video" },
+        { "action": "wait", "seconds": 2 },
+        { "action": "fetch", "peer": "peer-a2", "object_id": "lecture-1-video" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "lecture-1-video" }
+      ]
+    },
+    {
+      "name": "Course Burst Workload",
+      "description": "Students in the same course request overlapping content during a short burst window. Measures DHT cache hit rate and locality effectiveness.",
+      "duration_seconds": 18,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": ["peer-a1", "peer-a2"],
+          "objects": [
+            { "id": "csci5673-assignment-1", "weight": 5 },
+            { "id": "csci5673-lecture-5",    "weight": 3 },
+            { "id": "csci5673-reading-2",    "weight": 2 }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 8,
+          "count": 16
+        },
+        {
+          "kind": "random_uniform",
+          "peers": ["peer-b1"],
+          "objects": [
+            { "id": "campus-news",            "weight": 2 },
+            { "id": "csci5673-assignment-1",  "weight": 1 }
+          ],
+          "start_seconds": 4,
+          "end_seconds": 16,
+          "count": 6
+        }
+      ]
+    },
+    {
+      "name": "Burst With Independent Churn",
+      "description": "One peer crashes during an active burst and rejoins later. Measures DHT resilience: can surviving peers still serve content? Does the rejoining peer re-populate the DHT?",
+      "duration_seconds": 24,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": ["peer-a1", "peer-a2", "peer-b1"],
+          "objects": [
+            { "id": "midterm-review", "weight": 4 },
+            { "id": "practice-set",   "weight": 3 },
+            { "id": "formula-sheet",  "weight": 1 }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 14,
+          "count": 20
+        }
+      ],
+      "churn": [
+        {
+          "kind": "independent",
+          "peers": ["peer-a2", "peer-b1"],
+          "count": 1,
+          "start_seconds": 5,
+          "end_seconds": 9,
+          "downtime_seconds": 6
+        }
+      ]
+    },
+    {
+      "name": "Correlated Class Exit Churn",
+      "description": "Two Building-A peers leave simultaneously (class ends) then return. Key question: does DHT degrade gracefully and does the coordinator fallback maintain availability?",
+      "duration_seconds": 26,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": ["peer-a1", "peer-a2"],
+          "objects": [
+            { "id": "project-demo",  "weight": 4 },
+            { "id": "lab-starter",   "weight": 2 }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 10,
+          "count": 12
+        },
+        {
+          "kind": "random_uniform",
+          "peers": ["peer-a1", "peer-a2", "peer-b1"],
+          "objects": [
+            { "id": "project-demo",        "weight": 3 },
+            { "id": "department-calendar", "weight": 1 }
+          ],
+          "start_seconds": 10,
+          "end_seconds": 22,
+          "count": 10
+        }
+      ],
+      "churn": [
+        {
+          "kind": "correlated",
+          "events": [
+            {
+              "at_seconds": 11,
+              "peers": ["peer-a1", "peer-a2"],
+              "downtime_seconds": 6
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
