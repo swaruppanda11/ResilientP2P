@@ -1,0 +1,133 @@
+version: '3.8'
+
+# DHT-primary stack.
+#
+# Build layout (all images share the same build context = this directory):
+#   - coordinator / origin   reused from ../p2p-coordinator (no code changes)
+#   - dht-bootstrap          bare Kademlia bootstrap node
+#   - peer-*                 DHT-primary peers (Kademlia + coordinator fallback)
+#
+# Port map (host → container):
+#   8000  coordinator HTTP
+#   8001  origin HTTP
+#   7001-7006  peers HTTP
+#
+# DHT UDP traffic stays inside the Docker network (no host port mapping needed).
+
+services:
+
+  # ── Shared infrastructure (identical to coordinator stack) ─────────────────
+
+  coordinator:
+    build:
+      context: ../p2p-coordinator
+      dockerfile: coordinator/Dockerfile
+    environment:
+      - PROVIDER_SELECTION_POLICY=locality_then_load
+    ports:
+      - "8000:8000"
+    networks:
+      - p2p_network
+
+  origin:
+    build:
+      context: ../p2p-coordinator
+      dockerfile: origin/Dockerfile
+    ports:
+      - "8001:8001"
+    networks:
+      - p2p_network
+
+  # ── DHT bootstrap node ─────────────────────────────────────────────────────
+
+  dht-bootstrap:
+    build:
+      context: .
+      dockerfile: bootstrap/Dockerfile
+    environment:
+      - DHT_PORT=6000
+      - DHT_KSIZE=5
+      - DHT_ALPHA=3
+    networks:
+      - p2p_network
+
+  # ── DHT peers ──────────────────────────────────────────────────────────────
+
+  peer-a1:
+    build:
+      context: .
+      dockerfile: peer/Dockerfile
+    environment:
+      - PEER_ID=peer-a1
+      - LOCATION_ID=Building-A
+      - PEER_HOST=peer-a1
+      - PEER_PORT=7000
+      - COORDINATOR_URL=http://coordinator:8000
+      - ORIGIN_URL=http://origin:8001
+      - DHT_PORT=6000
+      - DHT_BOOTSTRAP_HOST=dht-bootstrap
+      - DHT_BOOTSTRAP_PORT=6000
+      - DHT_LOOKUP_TIMEOUT_SECONDS=0.5
+      - DHT_REPUBLISH_INTERVAL_SECONDS=300
+    ports:
+      - "7001:7000"
+    depends_on:
+      - coordinator
+      - origin
+      - dht-bootstrap
+    networks:
+      - p2p_network
+
+  peer-a2:
+    build:
+      context: .
+      dockerfile: peer/Dockerfile
+    environment:
+      - PEER_ID=peer-a2
+      - LOCATION_ID=Building-A
+      - PEER_HOST=peer-a2
+      - PEER_PORT=7000
+      - COORDINATOR_URL=http://coordinator:8000
+      - ORIGIN_URL=http://origin:8001
+      - DHT_PORT=6000
+      - DHT_BOOTSTRAP_HOST=dht-bootstrap
+      - DHT_BOOTSTRAP_PORT=6000
+      - DHT_LOOKUP_TIMEOUT_SECONDS=0.5
+      - DHT_REPUBLISH_INTERVAL_SECONDS=300
+    ports:
+      - "7002:7000"
+    depends_on:
+      - coordinator
+      - origin
+      - dht-bootstrap
+    networks:
+      - p2p_network
+
+  peer-b1:
+    build:
+      context: .
+      dockerfile: peer/Dockerfile
+    environment:
+      - PEER_ID=peer-b1
+      - LOCATION_ID=Building-B
+      - PEER_HOST=peer-b1
+      - PEER_PORT=7000
+      - COORDINATOR_URL=http://coordinator:8000
+      - ORIGIN_URL=http://origin:8001
+      - DHT_PORT=6000
+      - DHT_BOOTSTRAP_HOST=dht-bootstrap
+      - DHT_BOOTSTRAP_PORT=6000
+      - DHT_LOOKUP_TIMEOUT_SECONDS=0.5
+      - DHT_REPUBLISH_INTERVAL_SECONDS=300
+    ports:
+      - "7003:7000"
+    depends_on:
+      - coordinator
+      - origin
+      - dht-bootstrap
+    networks:
+      - p2p_network
+
+networks:
+  p2p_network:
+    driver: bridge
