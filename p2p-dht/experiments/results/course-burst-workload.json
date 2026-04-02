@@ -1,13 +1,8 @@
 {
   "scenario": "Course Burst Workload",
-  "description": "Students in the same course request overlapping content during a short burst window.",
-  "topology": {
-    "intra_location_delay_ms": 5,
-    "inter_location_delay_ms": 35,
-    "origin_delay_ms": 120
-  },
+  "description": "Students in the same course request overlapping content during a short burst window. Measures DHT cache hit rate and locality effectiveness.",
   "requested_duration_seconds": 18,
-  "actual_duration_seconds": 64.80419389996678,
+  "actual_duration_seconds": 14.12018180009909,
   "event_count": 22,
   "events": [
     {
@@ -15,13 +10,13 @@
       "peer": "peer-a1",
       "object_id": "csci5673-assignment-1",
       "scheduled_at_seconds": 0.25426143585426875,
-      "actual_started_seconds": 0.3312780000269413,
-      "runner_latency_ms": 6157.263100030832,
+      "actual_started_seconds": 0.2692120000720024,
+      "runner_latency_ms": 178.0789999756962,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 6122.079960999599,
+      "service_latency_ms": 164.91958299999965,
       "size": 1048576
     },
     {
@@ -29,13 +24,13 @@
       "peer": "peer-a2",
       "object_id": "csci5673-assignment-1",
       "scheduled_at_seconds": 1.2438359984942524,
-      "actual_started_seconds": 6.4885771999834105,
-      "runner_latency_ms": 8103.482299949974,
+      "actual_started_seconds": 1.253675700048916,
+      "runner_latency_ms": 39.60960009135306,
       "status": "success",
-      "source": "origin",
-      "provider": "http://origin:8001",
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
       "candidate_count": 1,
-      "service_latency_ms": 8161.498373000086,
+      "service_latency_ms": 35.22799499998541,
       "size": 1048576
     },
     {
@@ -43,13 +38,13 @@
       "peer": "peer-a2",
       "object_id": "csci5673-assignment-1",
       "scheduled_at_seconds": 1.277274531015121,
-      "actual_started_seconds": 14.592103500035591,
-      "runner_latency_ms": 2.989100059494376,
+      "actual_started_seconds": 1.293313300004229,
+      "runner_latency_ms": 27.55759994033724,
       "status": "success",
-      "source": "cache",
-      "provider": "peer-a2",
-      "candidate_count": 0,
-      "service_latency_ms": 0.1986749998650339,
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 26.38371199998346,
       "size": 1048576
     },
     {
@@ -57,13 +52,13 @@
       "peer": "peer-a1",
       "object_id": "csci5673-lecture-5",
       "scheduled_at_seconds": 1.9591348304278098,
-      "actual_started_seconds": 14.595118700060993,
-      "runner_latency_ms": 11021.11099998001,
+      "actual_started_seconds": 1.9706777000101283,
+      "runner_latency_ms": 152.65290008392185,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 11167.491847999827,
+      "service_latency_ms": 157.42643499999076,
       "size": 1048576
     },
     {
@@ -71,13 +66,13 @@
       "peer": "peer-a2",
       "object_id": "csci5673-lecture-5",
       "scheduled_at_seconds": 2.345426251256743,
-      "actual_started_seconds": 25.616250499966554,
-      "runner_latency_ms": 8165.197900030762,
+      "actual_started_seconds": 2.3557635000906885,
+      "runner_latency_ms": 37.522400030866265,
       "status": "success",
-      "source": "origin",
-      "provider": "http://origin:8001",
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
       "candidate_count": 1,
-      "service_latency_ms": 8089.24092999996,
+      "service_latency_ms": 35.83431500001666,
       "size": 1048576
     },
     {
@@ -85,13 +80,13 @@
       "peer": "peer-a2",
       "object_id": "csci5673-reading-2",
       "scheduled_at_seconds": 3.039418405098699,
-      "actual_started_seconds": 33.7814742999617,
-      "runner_latency_ms": 6115.246800007299,
+      "actual_started_seconds": 3.039799900026992,
+      "runner_latency_ms": 149.3782999459654,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 6129.336990999946,
+      "service_latency_ms": 151.8738930000154,
       "size": 1048576
     },
     {
@@ -99,13 +94,13 @@
       "peer": "peer-a1",
       "object_id": "csci5673-lecture-5",
       "scheduled_at_seconds": 4.042842304826899,
-      "actual_started_seconds": 39.896751899970695,
-      "runner_latency_ms": 8.939599967561662,
+      "actual_started_seconds": 4.05057410011068,
+      "runner_latency_ms": 5.0740999868139625,
       "status": "success",
       "source": "cache",
       "provider": "peer-a1",
       "candidate_count": 0,
-      "service_latency_ms": 0.3222599998480291,
+      "service_latency_ms": 0.3135530000122344,
       "size": 1048576
     },
     {
@@ -113,13 +108,13 @@
       "peer": "peer-a2",
       "object_id": "csci5673-assignment-1",
       "scheduled_at_seconds": 4.289824731637606,
-      "actual_started_seconds": 39.905729999998584,
-      "runner_latency_ms": 4.413500078953803,
+      "actual_started_seconds": 4.29809630010277,
+      "runner_latency_ms": 39.814600022509694,
       "status": "success",
-      "source": "cache",
-      "provider": "peer-a2",
-      "candidate_count": 0,
-      "service_latency_ms": 0.3202670000064245,
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 35.492559999994455,
       "size": 1048576
     },
     {
@@ -127,13 +122,13 @@
       "peer": "peer-a1",
       "object_id": "csci5673-lecture-5",
       "scheduled_at_seconds": 4.71412547100727,
-      "actual_started_seconds": 39.91018270002678,
-      "runner_latency_ms": 4.102500039152801,
+      "actual_started_seconds": 4.721102000097744,
+      "runner_latency_ms": 7.495600031688809,
       "status": "success",
       "source": "cache",
       "provider": "peer-a1",
       "candidate_count": 0,
-      "service_latency_ms": 0.224727999921015,
+      "service_latency_ms": 0.45293499999843334,
       "size": 1048576
     },
     {
@@ -141,13 +136,13 @@
       "peer": "peer-a1",
       "object_id": "csci5673-lecture-5",
       "scheduled_at_seconds": 4.8298082509351286,
-      "actual_started_seconds": 39.914326500031166,
-      "runner_latency_ms": 6.346300011500716,
+      "actual_started_seconds": 4.8310542000690475,
+      "runner_latency_ms": 6.841799942776561,
       "status": "success",
       "source": "cache",
       "provider": "peer-a1",
       "candidate_count": 0,
-      "service_latency_ms": 0.20936400005666655,
+      "service_latency_ms": 0.3274050000072748,
       "size": 1048576
     },
     {
@@ -155,13 +150,13 @@
       "peer": "peer-a1",
       "object_id": "csci5673-lecture-5",
       "scheduled_at_seconds": 5.11541438766307,
-      "actual_started_seconds": 39.920731400023215,
-      "runner_latency_ms": 11.54899992980063,
+      "actual_started_seconds": 5.125880800071172,
+      "runner_latency_ms": 2.9137999517843127,
       "status": "success",
       "source": "cache",
       "provider": "peer-a1",
       "candidate_count": 0,
-      "service_latency_ms": 0.3929299996343616,
+      "service_latency_ms": 0.16941299998052273,
       "size": 1048576
     },
     {
@@ -169,13 +164,13 @@
       "peer": "peer-a1",
       "object_id": "csci5673-lecture-5",
       "scheduled_at_seconds": 5.41359589938329,
-      "actual_started_seconds": 39.93236109998543,
-      "runner_latency_ms": 4.115700023248792,
+      "actual_started_seconds": 5.421359900035895,
+      "runner_latency_ms": 3.479899954982102,
       "status": "success",
       "source": "cache",
       "provider": "peer-a1",
       "candidate_count": 0,
-      "service_latency_ms": 0.19909000002371613,
+      "service_latency_ms": 0.2591170000130205,
       "size": 1048576
     },
     {
@@ -183,13 +178,13 @@
       "peer": "peer-a1",
       "object_id": "csci5673-lecture-5",
       "scheduled_at_seconds": 5.636574689719388,
-      "actual_started_seconds": 39.93652029999066,
-      "runner_latency_ms": 3.028400009498,
+      "actual_started_seconds": 5.638332500006072,
+      "runner_latency_ms": 5.372999934479594,
       "status": "success",
       "source": "cache",
       "provider": "peer-a1",
       "candidate_count": 0,
-      "service_latency_ms": 0.15181500020844396,
+      "service_latency_ms": 0.3343690000008337,
       "size": 1048576
     },
     {
@@ -197,13 +192,13 @@
       "peer": "peer-a2",
       "object_id": "csci5673-assignment-1",
       "scheduled_at_seconds": 5.728156903379228,
-      "actual_started_seconds": 39.939575299969874,
-      "runner_latency_ms": 3.127200063318014,
+      "actual_started_seconds": 5.732328000012785,
+      "runner_latency_ms": 44.23450003378093,
       "status": "success",
-      "source": "cache",
-      "provider": "peer-a2",
-      "candidate_count": 0,
-      "service_latency_ms": 0.17155900013676728,
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 39.47716199999718,
       "size": 1048576
     },
     {
@@ -211,13 +206,13 @@
       "peer": "peer-b1",
       "object_id": "campus-news",
       "scheduled_at_seconds": 6.053663778377164,
-      "actual_started_seconds": 39.942724899970926,
-      "runner_latency_ms": 6597.230600076728,
+      "actual_started_seconds": 6.056699900072999,
+      "runner_latency_ms": 151.2497999938205,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 6663.034802000311,
+      "service_latency_ms": 147.00994100002163,
       "size": 1048576
     },
     {
@@ -225,13 +220,13 @@
       "peer": "peer-a1",
       "object_id": "csci5673-reading-2",
       "scheduled_at_seconds": 6.184546726309535,
-      "actual_started_seconds": 46.539974299957976,
-      "runner_latency_ms": 8051.355100004002,
+      "actual_started_seconds": 6.207978000049479,
+      "runner_latency_ms": 29.711700044572353,
       "status": "success",
-      "source": "origin",
-      "provider": "http://origin:8001",
+      "source": "peer",
+      "provider": "http://peer-a2:7000",
       "candidate_count": 1,
-      "service_latency_ms": 8158.2769599999665,
+      "service_latency_ms": 27.35477500002048,
       "size": 1048576
     },
     {
@@ -239,13 +234,13 @@
       "peer": "peer-a2",
       "object_id": "csci5673-assignment-1",
       "scheduled_at_seconds": 6.931869334042157,
-      "actual_started_seconds": 54.59134759998415,
-      "runner_latency_ms": 7.193600060418248,
+      "actual_started_seconds": 6.9407112000044435,
+      "runner_latency_ms": 33.8196000084281,
       "status": "success",
-      "source": "cache",
-      "provider": "peer-a2",
-      "candidate_count": 0,
-      "service_latency_ms": 0.20399899995027226,
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 30.863307999993594,
       "size": 1048576
     },
     {
@@ -253,13 +248,13 @@
       "peer": "peer-b1",
       "object_id": "csci5673-assignment-1",
       "scheduled_at_seconds": 8.263248402730259,
-      "actual_started_seconds": 54.59856509999372,
-      "runner_latency_ms": 10197.024799999781,
+      "actual_started_seconds": 8.276296600000933,
+      "runner_latency_ms": 84.23119992949069,
       "status": "success",
-      "source": "origin",
-      "provider": "http://origin:8001",
-      "candidate_count": 2,
-      "service_latency_ms": 10130.742273000124,
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 78.00641699998323,
       "size": 1048576
     },
     {
@@ -267,13 +262,13 @@
       "peer": "peer-b1",
       "object_id": "csci5673-assignment-1",
       "scheduled_at_seconds": 8.553465301091773,
-      "actual_started_seconds": 64.79561649996322,
-      "runner_latency_ms": 2.153499983251095,
+      "actual_started_seconds": 8.555277500068769,
+      "runner_latency_ms": 3.406100091524422,
       "status": "success",
       "source": "cache",
       "provider": "peer-b1",
       "candidate_count": 0,
-      "service_latency_ms": 0.1495950000389712,
+      "service_latency_ms": 0.22875100000874227,
       "size": 1048576
     },
     {
@@ -281,13 +276,13 @@
       "peer": "peer-b1",
       "object_id": "campus-news",
       "scheduled_at_seconds": 11.628213331172802,
-      "actual_started_seconds": 64.79778729996178,
-      "runner_latency_ms": 1.9002999179065228,
+      "actual_started_seconds": 11.631261500064284,
+      "runner_latency_ms": 6.93560007493943,
       "status": "success",
       "source": "cache",
       "provider": "peer-b1",
       "candidate_count": 0,
-      "service_latency_ms": 0.118960999770934,
+      "service_latency_ms": 0.38285200000132136,
       "size": 1048576
     },
     {
@@ -295,13 +290,13 @@
       "peer": "peer-b1",
       "object_id": "campus-news",
       "scheduled_at_seconds": 12.202571986440006,
-      "actual_started_seconds": 64.79970380000304,
-      "runner_latency_ms": 2.215299988165498,
+      "actual_started_seconds": 12.2126027001068,
+      "runner_latency_ms": 3.0348000582307577,
       "status": "success",
       "source": "cache",
       "provider": "peer-b1",
       "candidate_count": 0,
-      "service_latency_ms": 0.13273500007926486,
+      "service_latency_ms": 0.16323000002671506,
       "size": 1048576
     },
     {
@@ -309,13 +304,13 @@
       "peer": "peer-b1",
       "object_id": "campus-news",
       "scheduled_at_seconds": 14.114223042277715,
-      "actual_started_seconds": 64.80193560000043,
-      "runner_latency_ms": 2.241100068204105,
+      "actual_started_seconds": 14.117573700030334,
+      "runner_latency_ms": 2.5843000039458275,
       "status": "success",
       "source": "cache",
       "provider": "peer-b1",
       "candidate_count": 0,
-      "service_latency_ms": 0.11509400019349414,
+      "service_latency_ms": 0.1751990000116166,
       "size": 1048576
     }
   ],
@@ -326,59 +321,61 @@
     "failed_fetch_count": 0,
     "success_rate": 1.0,
     "source_counts": {
-      "origin": 8,
-      "cache": 14
+      "origin": 4,
+      "peer": 8,
+      "cache": 10
     },
     "bytes_by_source": {
-      "origin": 8388608,
-      "cache": 14680064
+      "origin": 4194304,
+      "peer": 8388608,
+      "cache": 10485760
     },
     "service_latency_ms": {
-      "min": 0.11509400019349414,
-      "mean": 2937.4824186363435,
-      "median": 0.27249749996371975,
-      "p95": 10032.28007800012,
-      "max": 11167.491847999827
+      "min": 0.16323000002671506,
+      "mean": 42.3944054545483,
+      "median": 26.86924350000197,
+      "p95": 157.148807899992,
+      "max": 164.91958299999965
     },
     "runner_latency_ms": {
-      "min": 1.9002999179065228,
-      "mean": 2930.55575910363,
-      "median": 6.769950035959482,
-      "p95": 10095.433455001328,
-      "max": 11021.11099998001
+      "min": 2.5843000039458275,
+      "mean": 46.13637273326855,
+      "median": 28.634649992454797,
+      "p95": 152.58274507941678,
+      "max": 178.0789999756962
     },
-    "average_candidate_count": 0.22727272727272727
+    "average_candidate_count": 0.36363636363636365
   },
   "peer_stats": {
     "peer-a1": {
       "status": "ok",
-      "service": "peer:peer-a1",
+      "service": "dht-peer:peer-a1",
       "peer_id": "peer-a1",
       "location_id": "Building-A",
       "cache_capacity_bytes": 10485760,
-      "cache_size_bytes": 3145728,
-      "cache_object_count": 3,
-      "cache_hit_count": 9,
+      "cache_size_bytes": 2097152,
+      "cache_object_count": 2,
+      "cache_hit_count": 13,
       "cache_miss_count": 3,
       "cache_eviction_count": 0,
       "cache_rejected_write_count": 0
     },
     "peer-a2": {
       "status": "ok",
-      "service": "peer:peer-a2",
+      "service": "dht-peer:peer-a2",
       "peer_id": "peer-a2",
       "location_id": "Building-A",
       "cache_capacity_bytes": 10485760,
-      "cache_size_bytes": 3145728,
-      "cache_object_count": 3,
-      "cache_hit_count": 6,
-      "cache_miss_count": 3,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 1,
+      "cache_miss_count": 7,
       "cache_eviction_count": 0,
       "cache_rejected_write_count": 0
     },
     "peer-b1": {
       "status": "ok",
-      "service": "peer:peer-b1",
+      "service": "dht-peer:peer-b1",
       "peer_id": "peer-b1",
       "location_id": "Building-B",
       "cache_capacity_bytes": 10485760,
@@ -393,15 +390,34 @@
   "coordinator_stats": {
     "status": "ok",
     "service": "coordinator",
-    "peer_count": 0,
-    "object_count": 0,
-    "provider_entries": 0,
+    "peer_count": 3,
+    "object_count": 4,
+    "provider_entries": 5,
     "max_providers_per_lookup": 3,
     "peer_timeout_seconds": 30,
     "provider_selection_policy": "locality_then_load",
-    "total_upload_requests": 0,
-    "total_upload_bytes": 0,
-    "peer_loads": []
+    "total_upload_requests": 8,
+    "total_upload_bytes": 8388608,
+    "peer_loads": [
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 7,
+        "total_upload_bytes": 7340032,
+        "last_transfer_at": "2026-04-02T18:34:15.365706"
+      },
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 1,
+        "total_upload_bytes": 1048576,
+        "last_transfer_at": "2026-04-02T18:34:13.230043"
+      },
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      }
+    ]
   },
   "generated_from": {
     "request_profiles": [

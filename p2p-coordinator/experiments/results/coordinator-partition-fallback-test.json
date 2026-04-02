@@ -1,0 +1,217 @@
+{
+  "scenario": "Coordinator Partition Fallback Test",
+  "description": "Disconnect the coordinator from the Docker network to force DHT fallback under network partition rather than clean crash.",
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
+  "requested_duration_seconds": null,
+  "actual_duration_seconds": 27.01181059994269,
+  "event_count": 5,
+  "events": [
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "partition-fallback-1",
+      "scheduled_at_seconds": 0.0,
+      "actual_started_seconds": 0.3740965999895707,
+      "runner_latency_ms": 5742.165800067596,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 5670.685307999975,
+      "size": 1048576
+    },
+    {
+      "action": "disconnect",
+      "service": "coordinator",
+      "scheduled_at_seconds": 1.0,
+      "actual_started_seconds": 6.116292399936356,
+      "status": "disconnected"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "partition-fallback-1",
+      "scheduled_at_seconds": 2.0,
+      "actual_started_seconds": 6.617210699943826,
+      "runner_latency_ms": 6163.848199998029,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 6162.742694999906,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "partition-new-object-1",
+      "scheduled_at_seconds": 2.0,
+      "actual_started_seconds": 12.78112489997875,
+      "runner_latency_ms": 11524.204000015743,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 11655.11507400015,
+      "size": 1048576
+    },
+    {
+      "action": "connect",
+      "service": "coordinator",
+      "scheduled_at_seconds": 3.0,
+      "actual_started_seconds": 24.305355399963446,
+      "status": "connected"
+    }
+  ],
+  "summary": {
+    "total_events": 5,
+    "fetch_count": 3,
+    "successful_fetch_count": 3,
+    "failed_fetch_count": 0,
+    "success_rate": 1.0,
+    "source_counts": {
+      "origin": 3
+    },
+    "bytes_by_source": {
+      "origin": 3145728
+    },
+    "service_latency_ms": {
+      "min": 5670.685307999975,
+      "mean": 7829.514359000011,
+      "median": 6162.742694999906,
+      "p95": 11105.877836100124,
+      "max": 11655.11507400015
+    },
+    "runner_latency_ms": {
+      "min": 5742.165800067596,
+      "mean": 7810.072666693789,
+      "median": 6163.848199998029,
+      "p95": 10988.168420013972,
+      "max": 11524.204000015743
+    },
+    "average_candidate_count": 0
+  },
+  "peer_stats": {
+    "peer-a1": {
+      "status": "ok",
+      "service": "peer:peer-a1",
+      "peer_id": "peer-a1",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 0,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-a2": {
+      "status": "ok",
+      "service": "peer:peer-a2",
+      "peer_id": "peer-a2",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 0,
+      "cache_object_count": 0,
+      "cache_hit_count": 0,
+      "cache_miss_count": 0,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-b1": {
+      "status": "ok",
+      "service": "peer:peer-b1",
+      "peer_id": "peer-b1",
+      "location_id": "Building-B",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 2097152,
+      "cache_object_count": 2,
+      "cache_hit_count": 0,
+      "cache_miss_count": 2,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    }
+  },
+  "coordinator_stats": {
+    "status": "ok",
+    "service": "coordinator",
+    "peer_count": 3,
+    "object_count": 1,
+    "provider_entries": 1,
+    "max_providers_per_lookup": 3,
+    "peer_timeout_seconds": 30,
+    "provider_selection_policy": "locality_then_load",
+    "total_upload_requests": 0,
+    "total_upload_bytes": 0,
+    "peer_loads": [
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      },
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      },
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      }
+    ]
+  },
+  "generated_from": {
+    "request_profiles": [],
+    "churn_profiles": [],
+    "steps": [
+      {
+        "action": "fetch",
+        "peer": "peer-a1",
+        "object_id": "partition-fallback-1"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "disconnect",
+        "service": "coordinator"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-b1",
+        "object_id": "partition-fallback-1"
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-b1",
+        "object_id": "partition-new-object-1"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "connect",
+        "service": "coordinator",
+        "wait_after_seconds": 2
+      },
+      {
+        "action": "wait",
+        "seconds": 11
+      }
+    ]
+  }
+}

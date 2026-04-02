@@ -1,85 +1,102 @@
 {
-  "scenario": "Explicit Locality Smoke Test",
-  "description": "Simple deterministic run for sanity checking coordinator lookup and peer transfer.",
+  "scenario": "Coordinator Timeout Fallback Test",
+  "description": "Inject high network delay on the coordinator so coordinator lookups exceed the timeout budget and fall back to DHT.",
   "topology": {
     "intra_location_delay_ms": 5,
     "inter_location_delay_ms": 35,
     "origin_delay_ms": 120
   },
   "requested_duration_seconds": null,
-  "actual_duration_seconds": 35.145251699956134,
-  "event_count": 3,
+  "actual_duration_seconds": 20.83202440000605,
+  "event_count": 5,
   "events": [
     {
       "action": "fetch",
       "peer": "peer-a1",
-      "object_id": "lecture-1-video",
+      "object_id": "timeout-fallback-1",
       "scheduled_at_seconds": 0.0,
-      "actual_started_seconds": 0.4038564999355003,
-      "runner_latency_ms": 11542.567600030452,
+      "actual_started_seconds": 0.3323685999494046,
+      "runner_latency_ms": 6115.920000011101,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 11664.031271999875,
+      "service_latency_ms": 6174.996319999991,
       "size": 1048576
     },
     {
-      "action": "fetch",
-      "peer": "peer-a2",
-      "object_id": "lecture-1-video",
+      "action": "delay",
+      "service": "coordinator",
+      "delay_ms": 1200,
       "scheduled_at_seconds": 1.0,
-      "actual_started_seconds": 11.946468799957074,
-      "runner_latency_ms": 11575.619000010192,
+      "actual_started_seconds": 6.448320499970578,
+      "status": "delayed"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "timeout-fallback-1",
+      "scheduled_at_seconds": 2.0,
+      "actual_started_seconds": 6.867912800051272,
+      "runner_latency_ms": 2049.926400068216,
       "status": "success",
-      "source": "origin",
-      "provider": "http://origin:8001",
-      "candidate_count": 0,
-      "service_latency_ms": 11592.432142999996,
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 2067.3254080002152,
       "size": 1048576
     },
     {
       "action": "fetch",
       "peer": "peer-b1",
-      "object_id": "lecture-1-video",
+      "object_id": "timeout-new-object-1",
       "scheduled_at_seconds": 2.0,
-      "actual_started_seconds": 23.52211289992556,
-      "runner_latency_ms": 11623.117599985562,
+      "actual_started_seconds": 8.917880899971351,
+      "runner_latency_ms": 11521.945199929178,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 11654.886302000023,
+      "service_latency_ms": 11595.819140000003,
       "size": 1048576
+    },
+    {
+      "action": "clear_delay",
+      "service": "coordinator",
+      "scheduled_at_seconds": 3.0,
+      "actual_started_seconds": 20.43985560000874,
+      "status": "cleared"
     }
   ],
   "summary": {
-    "total_events": 3,
+    "total_events": 5,
     "fetch_count": 3,
     "successful_fetch_count": 3,
     "failed_fetch_count": 0,
     "success_rate": 1.0,
     "source_counts": {
-      "origin": 3
+      "origin": 2,
+      "peer": 1
     },
     "bytes_by_source": {
-      "origin": 3145728
+      "origin": 2097152,
+      "peer": 1048576
     },
     "service_latency_ms": {
-      "min": 11592.432142999996,
-      "mean": 11637.116572333298,
-      "median": 11654.886302000023,
-      "p95": 11663.11677499989,
-      "max": 11664.031271999875
+      "min": 2067.3254080002152,
+      "mean": 6612.713622666736,
+      "median": 6174.996319999991,
+      "p95": 11053.736858,
+      "max": 11595.819140000003
     },
     "runner_latency_ms": {
-      "min": 11542.567600030452,
-      "mean": 11580.434733342068,
-      "median": 11575.619000010192,
-      "p95": 11618.367739988025,
-      "max": 11623.117599985562
+      "min": 2049.926400068216,
+      "mean": 6562.597200002831,
+      "median": 6115.920000011101,
+      "p95": 10981.34267993737,
+      "max": 11521.945199929178
     },
-    "average_candidate_count": 0
+    "average_candidate_count": 0.3333333333333333
   },
   "peer_stats": {
     "peer-a1": {
@@ -90,7 +107,7 @@
       "cache_capacity_bytes": 10485760,
       "cache_size_bytes": 1048576,
       "cache_object_count": 1,
-      "cache_hit_count": 0,
+      "cache_hit_count": 1,
       "cache_miss_count": 1,
       "cache_eviction_count": 0,
       "cache_rejected_write_count": 0
@@ -101,10 +118,10 @@
       "peer_id": "peer-a2",
       "location_id": "Building-A",
       "cache_capacity_bytes": 10485760,
-      "cache_size_bytes": 1048576,
-      "cache_object_count": 1,
+      "cache_size_bytes": 0,
+      "cache_object_count": 0,
       "cache_hit_count": 0,
-      "cache_miss_count": 1,
+      "cache_miss_count": 0,
       "cache_eviction_count": 0,
       "cache_rejected_write_count": 0
     },
@@ -117,7 +134,7 @@
       "cache_size_bytes": 1048576,
       "cache_object_count": 1,
       "cache_hit_count": 0,
-      "cache_miss_count": 1,
+      "cache_miss_count": 2,
       "cache_eviction_count": 0,
       "cache_rejected_write_count": 0
     }
@@ -142,16 +159,16 @@
       {
         "action": "fetch",
         "peer": "peer-a1",
-        "object_id": "lecture-1-video"
+        "object_id": "timeout-fallback-1"
       },
       {
         "action": "wait",
         "seconds": 1
       },
       {
-        "action": "fetch",
-        "peer": "peer-a2",
-        "object_id": "lecture-1-video"
+        "action": "delay",
+        "service": "coordinator",
+        "delay_ms": 1200
       },
       {
         "action": "wait",
@@ -160,7 +177,24 @@
       {
         "action": "fetch",
         "peer": "peer-b1",
-        "object_id": "lecture-1-video"
+        "object_id": "timeout-fallback-1"
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-b1",
+        "object_id": "timeout-new-object-1"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "clear_delay",
+        "service": "coordinator"
+      },
+      {
+        "action": "wait",
+        "seconds": 2
       }
     ]
   }

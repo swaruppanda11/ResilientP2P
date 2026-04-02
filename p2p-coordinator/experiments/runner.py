@@ -42,6 +42,7 @@ class ExperimentRunner:
         )
         self.default_reset_stack = bool(self.spec.get("reset_stack_before_each_scenario", True))
         self.service_names = self._get_service_names()
+        self.network_name = f"{self.compose_file.parent.name}_p2p_network"
 
     def _get_service_names(self) -> List[str]:
         services = ["coordinator", "origin"]
@@ -264,6 +265,14 @@ class ExperimentRunner:
             return await self._execute_kill(event, client, actual_started_seconds)
         if event.action == "restart":
             return await self._execute_restart(event, actual_started_seconds)
+        if event.action == "disconnect":
+            return await self._execute_disconnect(event, actual_started_seconds)
+        if event.action == "connect":
+            return await self._execute_connect(event, actual_started_seconds)
+        if event.action == "delay":
+            return await self._execute_delay(event, actual_started_seconds)
+        if event.action == "clear_delay":
+            return await self._execute_clear_delay(event, actual_started_seconds)
         if event.action == "sleep":
             await asyncio.sleep(float(event.payload["seconds"]))
             return {
@@ -330,6 +339,18 @@ class ExperimentRunner:
         client: httpx.AsyncClient,
         actual_started_seconds: float,
     ) -> Dict[str, Any]:
+        service_name = event.payload.get("service")
+        if service_name:
+            print(f"[!] t={actual_started_seconds:.2f}s stop service {service_name}")
+            await self._compose_command(["stop", service_name])
+            return {
+                "action": "kill",
+                "service": service_name,
+                "scheduled_at_seconds": event.at_seconds,
+                "actual_started_seconds": actual_started_seconds,
+                "status": "stopped",
+            }
+
         peer_id = event.payload["peer"]
         peer_url = self.peer_map[peer_id]["url"]
         print(f"[!] t={actual_started_seconds:.2f}s kill {peer_id}")
@@ -346,6 +367,20 @@ class ExperimentRunner:
         }
 
     async def _execute_restart(self, event: Event, actual_started_seconds: float) -> Dict[str, Any]:
+        service_name = event.payload.get("service")
+        if service_name:
+            print(f"[+] t={actual_started_seconds:.2f}s restart service {service_name}")
+            await self._compose_command(["up", "-d", service_name])
+            await asyncio.sleep(float(event.payload.get("wait_after_seconds", self.bootstrap_wait_seconds)))
+            await self._wait_for_service_ready(service_name)
+            return {
+                "action": "restart",
+                "service": service_name,
+                "scheduled_at_seconds": event.at_seconds,
+                "actual_started_seconds": actual_started_seconds,
+                "status": "restarted",
+            }
+
         peer_id = event.payload["peer"]
         service_name = self.peer_map[peer_id].get("service", peer_id)
         print(f"[+] t={actual_started_seconds:.2f}s restart {peer_id}")
@@ -359,6 +394,67 @@ class ExperimentRunner:
             "scheduled_at_seconds": event.at_seconds,
             "actual_started_seconds": actual_started_seconds,
             "status": "restarted",
+        }
+
+    async def _execute_disconnect(self, event: Event, actual_started_seconds: float) -> Dict[str, Any]:
+        service_name = self._resolve_service_name(event.payload)
+        print(f"[!] t={actual_started_seconds:.2f}s disconnect service {service_name}")
+        container_id = await self._get_container_id(service_name)
+        await self._docker_command(["network", "disconnect", self.network_name, container_id])
+        return {
+            "action": "disconnect",
+            "service": service_name,
+            "scheduled_at_seconds": event.at_seconds,
+            "actual_started_seconds": actual_started_seconds,
+            "status": "disconnected",
+        }
+
+    async def _execute_connect(self, event: Event, actual_started_seconds: float) -> Dict[str, Any]:
+        service_name = self._resolve_service_name(event.payload)
+        print(f"[+] t={actual_started_seconds:.2f}s reconnect service {service_name}")
+        container_id = await self._get_container_id(service_name)
+        await self._docker_command(["network", "connect", self.network_name, container_id])
+        await asyncio.sleep(float(event.payload.get("wait_after_seconds", 2.0)))
+        await self._wait_for_service_ready(service_name)
+        return {
+            "action": "connect",
+            "service": service_name,
+            "scheduled_at_seconds": event.at_seconds,
+            "actual_started_seconds": actual_started_seconds,
+            "status": "connected",
+        }
+
+    async def _execute_delay(self, event: Event, actual_started_seconds: float) -> Dict[str, Any]:
+        service_name = self._resolve_service_name(event.payload)
+        delay_ms = int(event.payload["delay_ms"])
+        print(f"[!] t={actual_started_seconds:.2f}s delay service {service_name} by {delay_ms}ms")
+        container_id = await self._get_container_id(service_name)
+        await self._docker_command(
+            ["exec", container_id, "tc", "qdisc", "replace", "dev", "eth0", "root", "netem", "delay", f"{delay_ms}ms"]
+        )
+        return {
+            "action": "delay",
+            "service": service_name,
+            "delay_ms": delay_ms,
+            "scheduled_at_seconds": event.at_seconds,
+            "actual_started_seconds": actual_started_seconds,
+            "status": "delayed",
+        }
+
+    async def _execute_clear_delay(self, event: Event, actual_started_seconds: float) -> Dict[str, Any]:
+        service_name = self._resolve_service_name(event.payload)
+        print(f"[+] t={actual_started_seconds:.2f}s clear delay for service {service_name}")
+        container_id = await self._get_container_id(service_name)
+        await self._docker_command(
+            ["exec", container_id, "tc", "qdisc", "del", "dev", "eth0", "root"],
+            allow_nonzero=True,
+        )
+        return {
+            "action": "clear_delay",
+            "service": service_name,
+            "scheduled_at_seconds": event.at_seconds,
+            "actual_started_seconds": actual_started_seconds,
+            "status": "cleared",
         }
 
     async def _collect_peer_stats(self, client: httpx.AsyncClient) -> Dict[str, Any]:
@@ -382,25 +478,43 @@ class ExperimentRunner:
             return {"status": "unavailable", "error": str(exc)}
 
     async def _compose_command(self, args: List[str]) -> None:
+        await self._docker_command(
+            ["compose", "-f", str(self.compose_file), *args],
+            timeout=SERVICE_CONTROL_TIMEOUT_SECONDS,
+        )
+
+    async def _docker_command(
+        self,
+        args: List[str],
+        timeout: float = SERVICE_CONTROL_TIMEOUT_SECONDS,
+        allow_nonzero: bool = False,
+    ) -> str:
         process = await asyncio.create_subprocess_exec(
             "docker",
-            "compose",
-            "-f",
-            str(self.compose_file),
             *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = await asyncio.wait_for(
-            process.communicate(), timeout=SERVICE_CONTROL_TIMEOUT_SECONDS
-        )
-        if process.returncode != 0:
+        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
+        stdout_text = stdout.decode().strip()
+        stderr_text = stderr.decode().strip()
+        if process.returncode != 0 and not allow_nonzero:
             raise RuntimeError(
-                "docker compose command failed: "
+                "docker command failed: "
                 f"{' '.join(args)}\n"
-                f"stdout={stdout.decode().strip()}\n"
-                f"stderr={stderr.decode().strip()}"
+                f"stdout={stdout_text}\n"
+                f"stderr={stderr_text}"
             )
+        return stdout_text
+
+    async def _get_container_id(self, service_name: str) -> str:
+        output = await self._docker_command(
+            ["compose", "-f", str(self.compose_file), "ps", "-q", service_name]
+        )
+        container_id = output.strip().splitlines()[0] if output.strip() else ""
+        if not container_id:
+            raise RuntimeError(f"Could not resolve container id for service '{service_name}'")
+        return container_id
 
     async def _wait_for_stack_ready(self) -> None:
         async with httpx.AsyncClient(timeout=5.0) as client:
@@ -409,6 +523,22 @@ class ExperimentRunner:
             await self._wait_for_url(client, f"{origin_url}/health")
             for peer_id in self.peer_map:
                 await self._wait_for_peer_ready(peer_id, client=client)
+
+    async def _wait_for_service_ready(self, service_name: str) -> None:
+        health_url = self._service_health_url(service_name)
+        if health_url is None:
+            return
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await self._wait_for_url(client, health_url)
+
+    def _service_health_url(self, service_name: str) -> Optional[str]:
+        if service_name == "coordinator":
+            return self.spec.get("coordinator_url", "http://localhost:8000") + "/health"
+        if service_name == "origin":
+            return self.spec.get("origin_url", "http://localhost:8001") + "/health"
+        if service_name == "dht-bootstrap":
+            return None
+        return None
 
     async def _wait_for_peer_ready(
         self,
@@ -518,8 +648,26 @@ class ExperimentRunner:
         return normalized[-1]["id"]
 
     def _priority_for_action(self, action: str) -> int:
-        priorities = {"kill": 0, "restart": 1, "fetch": 2, "sleep": 3}
+        priorities = {
+            "kill": 0,
+            "disconnect": 0,
+            "delay": 0,
+            "restart": 1,
+            "connect": 1,
+            "clear_delay": 1,
+            "fetch": 2,
+            "sleep": 3,
+        }
         return priorities.get(action, 99)
+
+    def _resolve_service_name(self, payload: Dict[str, Any]) -> str:
+        service_name = payload.get("service")
+        if service_name:
+            return service_name
+        peer_id = payload.get("peer")
+        if peer_id:
+            return self.peer_map[peer_id].get("service", peer_id)
+        raise ValueError("Event payload must include either 'service' or 'peer'")
 
     def _slugify(self, name: str) -> str:
         return "".join(character.lower() if character.isalnum() else "-" for character in name).strip("-")

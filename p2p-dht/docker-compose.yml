@@ -22,6 +22,8 @@ services:
     build:
       context: ../p2p-coordinator
       dockerfile: coordinator/Dockerfile
+    cap_add:
+      - NET_ADMIN
     environment:
       - PROVIDER_SELECTION_POLICY=locality_then_load
     ports:
@@ -46,6 +48,8 @@ services:
     build:
       context: .
       dockerfile: bootstrap/Dockerfile
+    cap_add:
+      - NET_ADMIN
     environment:
       - DHT_PORT=6000
       - DHT_KSIZE=5
@@ -59,6 +63,8 @@ services:
     build:
       context: .
       dockerfile: peer/Dockerfile
+    cap_add:
+      - NET_ADMIN
     environment:
       - PEER_ID=peer-a1
       - LOCATION_ID=Building-A
@@ -86,6 +92,8 @@ services:
     build:
       context: .
       dockerfile: peer/Dockerfile
+    cap_add:
+      - NET_ADMIN
     environment:
       - PEER_ID=peer-a2
       - LOCATION_ID=Building-A
@@ -113,6 +121,8 @@ services:
     build:
       context: .
       dockerfile: peer/Dockerfile
+    cap_add:
+      - NET_ADMIN
     environment:
       - PEER_ID=peer-b1
       - LOCATION_ID=Building-B

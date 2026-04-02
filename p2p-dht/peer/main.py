@@ -85,7 +85,8 @@ async def get_object(object_id: str, requester_location_id: str = Query(...)):
         peer_id=settings.peer_id, object_id=object_id, size_bytes=len(data),
         requester_location_id=requester_location_id, network_delay_ms=delay_ms,
     )
-    await client.report_transfer(object_id, len(data))
+    # Keep peer-to-peer serving independent from coordinator accounting.
+    asyncio.create_task(client.report_transfer(object_id, len(data)))
     return {"content_hex": data.hex()}
 
 
