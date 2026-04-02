@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: p2p-common-config
+  namespace: p2p-coordinator
+data:
+  INTRA_LOCATION_DELAY_MS: "0"
+  INTER_LOCATION_DELAY_MS: "0"
+  ORIGIN_DELAY_MS: "0"
+  COORDINATOR_URL: "http://coordinator.p2p-coordinator.svc.cluster.local:8000"
+  ORIGIN_URL: "REPLACE_WITH_CLOUD_RUN_URL"
+  DHT_BOOTSTRAP_HOST: "dht-bootstrap.p2p-coordinator.svc.cluster.local"
+  DHT_BOOTSTRAP_PORT: "6000"
+  DHT_PORT: "6000"
+  PEER_PORT: "7000"
+  DHT_LOOKUP_TIMEOUT_SECONDS: "0.5"
+  DHT_REPUBLISH_INTERVAL_SECONDS: "300"
+  PROVIDER_SELECTION_POLICY: "locality_then_load"
+  HEARTBEAT_INTERVAL_SECONDS: "10"
+  PEER_TIMEOUT_SECONDS: "30"
+  MAX_PROVIDERS_PER_LOOKUP: "3"
+  LOOKUP_TIMEOUT_SECONDS: "2.0"
+  CACHE_CAPACITY_BYTES: "10485760"
