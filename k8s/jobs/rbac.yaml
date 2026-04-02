@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: experiment-runner
+  namespace: p2p-coordinator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: experiment-runner
+  namespace: p2p-coordinator
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments", "deployments/scale"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: experiment-runner
+  namespace: p2p-coordinator
+subjects:
+- kind: ServiceAccount
+  name: experiment-runner
+  namespace: p2p-coordinator
+roleRef:
+  kind: Role
+  name: experiment-runner
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: experiment-runner
+  namespace: p2p-dht
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: experiment-runner
+  namespace: p2p-dht
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments", "deployments/scale"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: experiment-runner
+  namespace: p2p-dht
+subjects:
+- kind: ServiceAccount
+  name: experiment-runner
+  namespace: p2p-dht
+roleRef:
+  kind: Role
+  name: experiment-runner
+  apiGroup: rbac.authorization.k8s.io
