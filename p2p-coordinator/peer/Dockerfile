@@ -6,6 +6,7 @@ COPY peer/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY common/ /app/common/
+COPY dht/ /app/dht/
 COPY peer/ /app/peer/
 
 ENV PYTHONPATH=/app

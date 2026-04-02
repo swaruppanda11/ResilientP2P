@@ -1,9 +1,24 @@
+"""
+Coordinator-primary peer client.
+
+Fetch order:
+  1. Local cache hit                      → source="cache"
+  2. Coordinator lookup → peer fetch      → source="peer",  coordinator_used=True
+  3. DHT fallback → peer fetch            → source="peer",  dht_fallback_used=True
+  4. Origin fetch                         → source="origin"
+
+The DHT is also updated on every successful cache store so that the
+DHT-primary experiments can serve as a meaningful comparison baseline:
+both architectures share the same DHT index, so cache hit rates
+reflect discovery differences rather than content availability differences.
+"""
+
+import asyncio
 import httpx
 import time
 import logging
-import asyncio
 from dataclasses import dataclass
-from typing import Optional
+from typing import Dict, List, Optional, Tuple
 
 from common.config import get_peer_settings
 from common.logging import get_logger, log_event
@@ -16,27 +31,39 @@ from common.schemas import (
     TransferReportRequest,
 )
 from common.metrics import log_metric, MetricEvent
+from dht.node import DHTNode
 from peer.cache import Cache, CacheWriteResult
 
 
 @dataclass(frozen=True)
 class FetchResult:
     object_id: str
-    source: str
+    source: str           # "cache" | "peer" | "origin"
     size: int
     latency_ms: float
     candidate_count: int = 0
     provider: Optional[str] = None
     data: Optional[bytes] = None
+    coordinator_used: bool = False
+    dht_fallback_used: bool = False
 
 
 class PeerClient:
-    def __init__(self, peer_id: str, location_id: str, coordinator_url: str, origin_url: str, cache: Cache):
+    def __init__(
+        self,
+        peer_id: str,
+        location_id: str,
+        coordinator_url: str,
+        origin_url: str,
+        cache: Cache,
+        dht_node: DHTNode,
+    ):
         self.peer_id = peer_id
         self.location_id = location_id
         self.coordinator_url = coordinator_url
         self.origin_url = origin_url
         self.cache = cache
+        self.dht_node = dht_node
         self.settings = get_peer_settings()
         self.logger = get_logger(f"{self.settings.service_name}:{self.peer_id}")
         self.http_client = httpx.AsyncClient(timeout=10.0)
@@ -91,6 +118,15 @@ class PeerClient:
                 error=str(e),
             )
 
+    async def republish_all(self) -> None:
+        """Re-announce all cached objects to the DHT (churn recovery)."""
+        for object_id in list(self.cache.storage.keys()):
+            await self._announce_dht(object_id)
+
+    # ------------------------------------------------------------------
+    # Core fetch pipeline
+    # ------------------------------------------------------------------
+
     async def fetch_object(self, object_id: str) -> Optional[FetchResult]:
         start_time = time.perf_counter()
 
@@ -135,12 +171,13 @@ class PeerClient:
             location_id=self.location_id,
         ))
 
-        # 2. Lookup in Coordinator
-        providers = []
-        metadata = None
+        # 2. Coordinator lookup (primary)
+        providers: List[str] = []
+        metadata: Optional[ObjectMetadata] = None
+        coordinator_failed = False
         try:
             resp = await self.http_client.get(
-                f"{self.coordinator_url}/lookup/{object_id}", 
+                f"{self.coordinator_url}/lookup/{object_id}",
                 params={"location_id": self.location_id},
                 timeout=self.settings.lookup_timeout_seconds,
             )
@@ -157,6 +194,7 @@ class PeerClient:
                 candidate_count=len(providers),
             ))
         except Exception as e:
+            coordinator_failed = True
             log_event(
                 self.logger,
                 logging.ERROR,
@@ -173,10 +211,31 @@ class PeerClient:
                 location_id=self.location_id,
             ))
 
-        # 3. Try Peers
-        for peer_url in providers:
+        # 3. DHT fallback when coordinator fails or returns no providers
+        dht_fallback_used = False
+        dht_urls: List[str] = []
+
+        if coordinator_failed or not providers:
+            dht_providers, dht_failed = await self._dht_lookup(object_id, start_time)
+            if not dht_failed and dht_providers:
+                dht_fallback_used = True
+                dht_urls = self._select_dht_providers(dht_providers)
+                log_metric(MetricEvent(
+                    source_peer=self.peer_id,
+                    event_type="DHT_FALLBACK",
+                    object_id=object_id,
+                    latency_ms=(time.perf_counter() - start_time) * 1000,
+                    location_id=self.location_id,
+                    candidate_count=len(dht_urls),
+                ))
+
+        # Build ordered candidate list: coordinator peers first, then DHT peers
+        peer_urls = providers + dht_urls
+        candidate_count = len(peer_urls)
+
+        # 4. Try Peers
+        for peer_url in peer_urls:
             try:
-                # Assuming peer has /get-object/{id} endpoint
                 p_resp = await self.http_client.get(
                     f"{peer_url}/get-object/{object_id}",
                     params={"requester_location_id": self.location_id},
@@ -185,14 +244,17 @@ class PeerClient:
                 p_resp.raise_for_status()
                 data_hex = p_resp.json()["content_hex"]
                 data = bytes.fromhex(data_hex)
-                
+
                 # Store in cache and publish
+                if metadata is None:
+                    metadata = self.cache.get_metadata(object_id)
                 if metadata:
                     write_result = self.cache.put(metadata, data)
                     self._log_cache_write_metrics(object_id, write_result)
                     if write_result.stored:
+                        await self._announce_dht(object_id)
                         await self.publish(metadata)
-                    
+
                 latency = (time.perf_counter() - start_time) * 1000
                 log_metric(MetricEvent(
                     source_peer=self.peer_id,
@@ -202,16 +264,18 @@ class PeerClient:
                     location_id=self.location_id,
                     bytes_transferred=len(data),
                     provider_peer=peer_url,
-                    candidate_count=len(providers),
+                    candidate_count=candidate_count,
                 ))
                 return FetchResult(
                     object_id=object_id,
                     source="peer",
                     size=len(data),
                     latency_ms=latency,
-                    candidate_count=len(providers),
+                    candidate_count=candidate_count,
                     provider=peer_url,
                     data=data,
+                    coordinator_used=not coordinator_failed,
+                    dht_fallback_used=dht_fallback_used,
                 )
             except Exception as e:
                 log_event(
@@ -225,12 +289,12 @@ class PeerClient:
                 )
                 continue
 
-        # 4. Fallback to Origin
+        # 5. Fallback to Origin
         try:
             o_resp = await self.http_client.get(f"{self.origin_url}/object/{object_id}")
             o_resp.raise_for_status()
             res = o_resp.json()
-            data = bytes.fromhex(res["content_hex"]) 
+            data = bytes.fromhex(res["content_hex"])
             meta = ObjectMetadata(
                 object_id=object_id,
                 checksum=res["checksum"],
@@ -239,6 +303,7 @@ class PeerClient:
             write_result = self.cache.put(meta, data)
             self._log_cache_write_metrics(object_id, write_result)
             if write_result.stored:
+                await self._announce_dht(object_id)
                 await self.publish(meta)
 
             latency = (time.perf_counter() - start_time) * 1000
@@ -256,9 +321,10 @@ class PeerClient:
                 source="origin",
                 size=len(data),
                 latency_ms=latency,
-                candidate_count=len(providers),
+                candidate_count=candidate_count,
                 provider=self.origin_url,
                 data=data,
+                dht_fallback_used=dht_fallback_used,
             )
         except Exception as e:
             log_event(
@@ -271,6 +337,87 @@ class PeerClient:
             )
 
         return None
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    async def _dht_lookup(
+        self, object_id: str, start_time: float
+    ) -> Tuple[List[Dict], bool]:
+        """
+        Perform a DHT lookup with a per-request timeout.
+
+        Returns (providers, failed). 'failed' is True when the DHT timed out
+        or raised an unexpected error.
+        """
+        try:
+            providers = await asyncio.wait_for(
+                self.dht_node.lookup(object_id),
+                timeout=self.settings.dht_lookup_timeout_seconds,
+            )
+            log_metric(MetricEvent(
+                source_peer=self.peer_id,
+                event_type="DHT_LOOKUP_RESULT",
+                object_id=object_id,
+                latency_ms=(time.perf_counter() - start_time) * 1000,
+                location_id=self.location_id,
+                candidate_count=len(providers),
+            ))
+            log_event(
+                self.logger, logging.INFO, "dht_lookup_success",
+                peer_id=self.peer_id, object_id=object_id,
+                provider_count=len(providers),
+            )
+            return providers, False
+        except asyncio.TimeoutError:
+            log_event(
+                self.logger, logging.WARNING, "dht_lookup_timeout",
+                peer_id=self.peer_id, object_id=object_id,
+            )
+            log_metric(MetricEvent(
+                source_peer=self.peer_id,
+                event_type="DHT_LOOKUP_TIMEOUT",
+                object_id=object_id,
+                latency_ms=self.settings.dht_lookup_timeout_seconds * 1000,
+                location_id=self.location_id,
+            ))
+            return [], True
+        except Exception as exc:
+            log_event(
+                self.logger, logging.ERROR, "dht_lookup_error",
+                peer_id=self.peer_id, object_id=object_id, error=str(exc),
+            )
+            log_metric(MetricEvent(
+                source_peer=self.peer_id,
+                event_type="DHT_LOOKUP_FAILURE",
+                object_id=object_id,
+                latency_ms=(time.perf_counter() - start_time) * 1000,
+                location_id=self.location_id,
+            ))
+            return [], True
+
+    def _select_dht_providers(self, dht_providers: List[Dict]) -> List[str]:
+        """
+        Sort DHT provider list by locality (same building first) and return
+        up to max_providers_per_lookup URLs, excluding self.
+        """
+        filtered = [p for p in dht_providers if p.get("peer_id") != self.peer_id]
+        sorted_providers = sorted(
+            filtered,
+            key=lambda p: (p.get("location_id") != self.location_id, p.get("peer_id", "")),
+        )
+        return [p["url"] for p in sorted_providers[: self.settings.max_providers_per_lookup]]
+
+    async def _announce_dht(self, object_id: str) -> None:
+        """Announce cached object to DHT so the fallback index stays current."""
+        peer_url = f"http://{self.host}:{self.port}"
+        await self.dht_node.announce(
+            object_id=object_id,
+            peer_id=self.peer_id,
+            peer_url=peer_url,
+            location_id=self.location_id,
+        )
 
     async def publish(self, metadata: ObjectMetadata):
         req = PublishRequest(peer_id=self.peer_id, metadata=metadata)

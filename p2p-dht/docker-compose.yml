@@ -33,6 +33,8 @@ services:
     build:
       context: ../p2p-coordinator
       dockerfile: origin/Dockerfile
+    environment:
+      - ORIGIN_DELAY_MS=120
     ports:
       - "8001:8001"
     networks:
@@ -64,6 +66,8 @@ services:
       - PEER_PORT=7000
       - COORDINATOR_URL=http://coordinator:8000
       - ORIGIN_URL=http://origin:8001
+      - INTRA_LOCATION_DELAY_MS=5
+      - INTER_LOCATION_DELAY_MS=35
       - DHT_PORT=6000
       - DHT_BOOTSTRAP_HOST=dht-bootstrap
       - DHT_BOOTSTRAP_PORT=6000
@@ -89,6 +93,8 @@ services:
       - PEER_PORT=7000
       - COORDINATOR_URL=http://coordinator:8000
       - ORIGIN_URL=http://origin:8001
+      - INTRA_LOCATION_DELAY_MS=5
+      - INTER_LOCATION_DELAY_MS=35
       - DHT_PORT=6000
       - DHT_BOOTSTRAP_HOST=dht-bootstrap
       - DHT_BOOTSTRAP_PORT=6000
@@ -114,6 +120,8 @@ services:
       - PEER_PORT=7000
       - COORDINATOR_URL=http://coordinator:8000
       - ORIGIN_URL=http://origin:8001
+      - INTRA_LOCATION_DELAY_MS=5
+      - INTER_LOCATION_DELAY_MS=35
       - DHT_PORT=6000
       - DHT_BOOTSTRAP_HOST=dht-bootstrap
       - DHT_BOOTSTRAP_PORT=6000

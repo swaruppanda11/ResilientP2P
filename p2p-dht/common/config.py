@@ -31,6 +31,9 @@ class CommonSettings:
     cleanup_interval_seconds: int
     max_providers_per_lookup: int
     lookup_timeout_seconds: float
+    intra_location_delay_ms: int
+    inter_location_delay_ms: int
+    origin_delay_ms: int
 
 
 @dataclass(frozen=True)
@@ -58,6 +61,9 @@ def get_common_settings() -> CommonSettings:
         cleanup_interval_seconds=_get_int("COORDINATOR_CLEANUP_INTERVAL_SECONDS", 10),
         max_providers_per_lookup=_get_int("MAX_PROVIDERS_PER_LOOKUP", 3),
         lookup_timeout_seconds=_get_float("LOOKUP_TIMEOUT_SECONDS", 2.0),
+        intra_location_delay_ms=_get_int("INTRA_LOCATION_DELAY_MS", 5),
+        inter_location_delay_ms=_get_int("INTER_LOCATION_DELAY_MS", 35),
+        origin_delay_ms=_get_int("ORIGIN_DELAY_MS", 120),
     )
 
 
@@ -70,6 +76,9 @@ def get_dht_peer_settings() -> DHTPeerSettings:
         cleanup_interval_seconds=common.cleanup_interval_seconds,
         max_providers_per_lookup=common.max_providers_per_lookup,
         lookup_timeout_seconds=common.lookup_timeout_seconds,
+        intra_location_delay_ms=common.intra_location_delay_ms,
+        inter_location_delay_ms=common.inter_location_delay_ms,
+        origin_delay_ms=common.origin_delay_ms,
         peer_id=peer_id,
         location_id=_get_str("LOCATION_ID", "Building-A"),
         coordinator_url=_get_str("COORDINATOR_URL", "http://coordinator:8000"),

@@ -57,6 +57,12 @@ class PeerSettings(CommonSettings):
     host: str
     port: int
     cache_capacity_bytes: int
+    # DHT fallback settings
+    dht_port: int = 6000
+    dht_bootstrap_host: str = "dht-bootstrap"
+    dht_bootstrap_port: int = 6000
+    dht_lookup_timeout_seconds: float = 0.5
+    dht_republish_interval_seconds: int = 300
     service_name: str = "peer"
 
 
@@ -112,4 +118,9 @@ def get_peer_settings() -> PeerSettings:
         host=os.getenv("PEER_HOST", peer_id),
         port=_get_int("PEER_PORT", 7000),
         cache_capacity_bytes=_get_int("CACHE_CAPACITY_BYTES", 10 * 1024 * 1024),
+        dht_port=_get_int("DHT_PORT", 6000),
+        dht_bootstrap_host=_get_str("DHT_BOOTSTRAP_HOST", "dht-bootstrap"),
+        dht_bootstrap_port=_get_int("DHT_BOOTSTRAP_PORT", 6000),
+        dht_lookup_timeout_seconds=_get_float("DHT_LOOKUP_TIMEOUT_SECONDS", 0.5),
+        dht_republish_interval_seconds=_get_int("DHT_REPUBLISH_INTERVAL_SECONDS", 300),
     )

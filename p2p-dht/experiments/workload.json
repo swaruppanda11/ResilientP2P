@@ -7,6 +7,11 @@
   "bootstrap_wait_seconds": 6,
   "service_ready_timeout_seconds": 60,
   "reset_stack_before_each_scenario": true,
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
   "peer_map": {
     "peer-a1": {
       "url": "http://localhost:7001",
@@ -30,7 +35,7 @@
       "description": "Sanity check: peer-a1 fetches from origin, peer-a2 should find it via DHT (same building), peer-b1 via DHT (cross-building).",
       "steps": [
         { "action": "fetch", "peer": "peer-a1", "object_id": "lecture-1-video" },
-        { "action": "wait", "seconds": 2 },
+        { "action": "wait", "seconds": 1 },
         { "action": "fetch", "peer": "peer-a2", "object_id": "lecture-1-video" },
         { "action": "wait", "seconds": 1 },
         { "action": "fetch", "peer": "peer-b1", "object_id": "lecture-1-video" }

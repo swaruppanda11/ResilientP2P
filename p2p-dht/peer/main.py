@@ -3,7 +3,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 
 from common.config import get_dht_peer_settings
 from common.logging import get_logger, log_event
@@ -68,13 +68,22 @@ app = FastAPI(title=f"DHT Peer {settings.peer_id}", lifespan=lifespan)
 
 
 @app.get("/get-object/{object_id}")
-async def get_object(object_id: str):
+async def get_object(object_id: str, requester_location_id: str = Query(...)):
     data = cache.get(object_id)
     if not data:
         raise HTTPException(status_code=404, detail="Object not in cache")
+
+    if requester_location_id == settings.location_id:
+        delay_ms = settings.intra_location_delay_ms
+    else:
+        delay_ms = settings.inter_location_delay_ms
+    if delay_ms > 0:
+        await asyncio.sleep(delay_ms / 1000)
+
     log_event(
         logger, logging.INFO, "cache_served",
         peer_id=settings.peer_id, object_id=object_id, size_bytes=len(data),
+        requester_location_id=requester_location_id, network_delay_ms=delay_ms,
     )
     await client.report_transfer(object_id, len(data))
     return {"content_hex": data.hex()}

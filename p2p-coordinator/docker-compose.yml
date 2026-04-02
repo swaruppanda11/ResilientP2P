@@ -23,6 +23,21 @@ services:
     networks:
       - p2p_network
 
+  # ── DHT bootstrap node (for fallback discovery) ───────────────────────────
+
+  dht-bootstrap:
+    build:
+      context: .
+      dockerfile: bootstrap/Dockerfile
+    environment:
+      - DHT_PORT=6000
+      - DHT_KSIZE=5
+      - DHT_ALPHA=3
+    networks:
+      - p2p_network
+
+  # ── Coordinator-primary peers ─────────────────────────────────────────────
+
   peer-a1:
     build:
       context: .
@@ -30,15 +45,23 @@ services:
     environment:
       - PEER_ID=peer-a1
       - LOCATION_ID=Building-A
+      - PEER_HOST=peer-a1
+      - PEER_PORT=7000
       - COORDINATOR_URL=http://coordinator:8000
       - ORIGIN_URL=http://origin:8001
       - INTRA_LOCATION_DELAY_MS=5
       - INTER_LOCATION_DELAY_MS=35
+      - DHT_PORT=6000
+      - DHT_BOOTSTRAP_HOST=dht-bootstrap
+      - DHT_BOOTSTRAP_PORT=6000
+      - DHT_LOOKUP_TIMEOUT_SECONDS=0.5
+      - DHT_REPUBLISH_INTERVAL_SECONDS=300
     ports:
       - "7001:7000"
     depends_on:
       - coordinator
       - origin
+      - dht-bootstrap
     networks:
       - p2p_network
 
@@ -49,15 +72,23 @@ services:
     environment:
       - PEER_ID=peer-a2
       - LOCATION_ID=Building-A
+      - PEER_HOST=peer-a2
+      - PEER_PORT=7000
       - COORDINATOR_URL=http://coordinator:8000
       - ORIGIN_URL=http://origin:8001
       - INTRA_LOCATION_DELAY_MS=5
       - INTER_LOCATION_DELAY_MS=35
+      - DHT_PORT=6000
+      - DHT_BOOTSTRAP_HOST=dht-bootstrap
+      - DHT_BOOTSTRAP_PORT=6000
+      - DHT_LOOKUP_TIMEOUT_SECONDS=0.5
+      - DHT_REPUBLISH_INTERVAL_SECONDS=300
     ports:
       - "7002:7000"
     depends_on:
       - coordinator
       - origin
+      - dht-bootstrap
     networks:
       - p2p_network
 
@@ -68,15 +99,23 @@ services:
     environment:
       - PEER_ID=peer-b1
       - LOCATION_ID=Building-B
+      - PEER_HOST=peer-b1
+      - PEER_PORT=7000
       - COORDINATOR_URL=http://coordinator:8000
       - ORIGIN_URL=http://origin:8001
       - INTRA_LOCATION_DELAY_MS=5
       - INTER_LOCATION_DELAY_MS=35
+      - DHT_PORT=6000
+      - DHT_BOOTSTRAP_HOST=dht-bootstrap
+      - DHT_BOOTSTRAP_PORT=6000
+      - DHT_LOOKUP_TIMEOUT_SECONDS=0.5
+      - DHT_REPUBLISH_INTERVAL_SECONDS=300
     ports:
       - "7003:7000"
     depends_on:
       - coordinator
       - origin
+      - dht-bootstrap
     networks:
       - p2p_network
 

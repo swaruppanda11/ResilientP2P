@@ -205,6 +205,7 @@ class DHTPeerClient:
             try:
                 p_resp = await self.http_client.get(
                     f"{peer_url}/get-object/{object_id}",
+                    params={"requester_location_id": self.location_id},
                     timeout=self.settings.lookup_timeout_seconds,
                 )
                 p_resp.raise_for_status()

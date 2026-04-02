@@ -2,3 +2,4 @@ fastapi
 uvicorn
 httpx
 pydantic
+kademlia==2.2.2

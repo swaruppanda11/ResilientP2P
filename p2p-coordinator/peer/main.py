@@ -6,6 +6,7 @@ import os
 from common.config import get_peer_settings
 from common.logging import get_logger, log_event
 from common.schemas import HealthResponse, PeerFetchResponse, PeerStatsResponse
+from dht.node import DHTNode
 from peer.cache import Cache
 from peer.client import PeerClient
 from contextlib import asynccontextmanager
@@ -14,29 +15,49 @@ settings = get_peer_settings()
 logger = get_logger(f"{settings.service_name}:{settings.peer_id}")
 
 cache = Cache(capacity_bytes=settings.cache_capacity_bytes)
+dht_node = DHTNode(port=settings.dht_port, logger=logger)
 client = PeerClient(
     settings.peer_id,
     settings.location_id,
     settings.coordinator_url,
     settings.origin_url,
     cache,
+    dht_node,
 )
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Register with coordinator
+    # 1. Start DHT node and bootstrap into the overlay.
+    bootstrap_nodes = []
+    if settings.dht_bootstrap_host:
+        bootstrap_nodes = [(settings.dht_bootstrap_host, settings.dht_bootstrap_port)]
+    await dht_node.start(bootstrap_nodes)
+
+    # 2. Register with coordinator
     await client.register(settings.host, settings.port)
-    
-    # 2. Start heartbeat loop
+
+    # 3. Background tasks: heartbeat + DHT republish
     heartbeat_task = asyncio.create_task(heartbeat_loop())
-    
+    republish_task = asyncio.create_task(republish_loop())
+
     yield
+
     heartbeat_task.cancel()
+    republish_task.cancel()
+    # Graceful DHT departure: remove self from provider lists.
+    await dht_node.remove_peer(settings.peer_id, list(cache.storage.keys()))
+    dht_node.stop()
 
 async def heartbeat_loop():
     while True:
         await client.heartbeat()
         await asyncio.sleep(settings.heartbeat_interval_seconds)
+
+async def republish_loop():
+    """Periodically re-announce cached objects to the DHT (churn recovery)."""
+    while True:
+        await asyncio.sleep(settings.dht_republish_interval_seconds)
+        await client.republish_all()
 
 app = FastAPI(title=f"Peer {settings.peer_id}", lifespan=lifespan)
 
