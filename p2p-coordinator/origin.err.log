@@ -1,0 +1,48 @@
+Traceback (most recent call last):
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\logging\config.py", line 587, in configure
+    formatters[name] = self.configure_formatter(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\logging\config.py", line 699, in configure_formatter
+    result = self.configure_custom(config)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\logging\config.py", line 490, in configure_custom
+    result = c(**kwargs)
+             ^^^^^^^^^^^
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\site-packages\uvicorn\logging.py", line 42, in __init__
+    self.use_colors = sys.stdout.isatty()
+                      ^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'isatty'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\site-packages\uvicorn\__main__.py", line 4, in <module>
+    uvicorn.main()
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\site-packages\click\core.py", line 1462, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\site-packages\click\core.py", line 1383, in main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\site-packages\click\core.py", line 1246, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\site-packages\click\core.py", line 814, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\site-packages\uvicorn\main.py", line 412, in main
+    run(
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\site-packages\uvicorn\main.py", line 516, in run
+    config = Config(
+             ^^^^^^^
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\site-packages\uvicorn\config.py", line 274, in __init__
+    self.configure_logging()
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\site-packages\uvicorn\config.py", line 366, in configure_logging
+    logging.config.dictConfig(self.log_config)
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\logging\config.py", line 942, in dictConfig
+    dictConfigClass(config).configure()
+  File "C:\Users\nagra_1xnf1bu\anaconda3\Lib\logging\config.py", line 590, in configure
+    raise ValueError('Unable to configure '
+ValueError: Unable to configure formatter 'default'

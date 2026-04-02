@@ -1,0 +1,6 @@
+{"timestamp":"2026-03-01T13:04:24.304553","service":"peer:peer-a1","level":"INFO","event":"peer_register_success","details":{"peer_id":"peer-a1"}}
+INFO:     127.0.0.1:58849 - "GET /health HTTP/1.1" 200 OK
+METRIC: {"timestamp":"2026-03-01T13:04:46.580822","source_peer":"peer-a1","event_type":"ORIGIN_FETCH","object_id":"test-object-1","latency_ms":152.99224853515625,"location_id":"Building-A"}
+INFO:     127.0.0.1:58857 - "GET /trigger-fetch/test-object-1 HTTP/1.1" 200 OK
+{"timestamp":"2026-03-01T13:05:25.126406","service":"peer:peer-a1","level":"INFO","event":"cache_served","details":{"peer_id":"peer-a1","object_id":"test-object-1","size_bytes":1048576}}
+INFO:     127.0.0.1:56030 - "GET /get-object/test-object-1 HTTP/1.1" 200 OK

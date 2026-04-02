@@ -1,0 +1,188 @@
+{
+  "scenario": "Explicit Locality Smoke Test",
+  "description": "Simple deterministic run for sanity checking coordinator lookup and peer transfer.",
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
+  "requested_duration_seconds": null,
+  "actual_duration_seconds": 2.1027818999864394,
+  "event_count": 3,
+  "events": [
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "lecture-1-video",
+      "scheduled_at_seconds": 0.0,
+      "actual_started_seconds": 0.39537109999218956,
+      "runner_latency_ms": 178.25909999373835,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 163.67771299997003,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "lecture-1-video",
+      "scheduled_at_seconds": 1.0,
+      "actual_started_seconds": 1.0129265999858035,
+      "runner_latency_ms": 83.16190000914503,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 69.16251799998463,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "lecture-1-video",
+      "scheduled_at_seconds": 2.0,
+      "actual_started_seconds": 2.0135209999862127,
+      "runner_latency_ms": 88.21509999688715,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a2:7000",
+      "candidate_count": 2,
+      "service_latency_ms": 73.36978500006808,
+      "size": 1048576
+    }
+  ],
+  "summary": {
+    "total_events": 3,
+    "fetch_count": 3,
+    "successful_fetch_count": 3,
+    "failed_fetch_count": 0,
+    "success_rate": 1.0,
+    "source_counts": {
+      "origin": 1,
+      "peer": 2
+    },
+    "bytes_by_source": {
+      "origin": 1048576,
+      "peer": 2097152
+    },
+    "service_latency_ms": {
+      "min": 69.16251799998463,
+      "mean": 102.07000533334092,
+      "median": 73.36978500006808,
+      "p95": 154.64692019997983,
+      "max": 163.67771299997003
+    },
+    "runner_latency_ms": {
+      "min": 83.16190000914503,
+      "mean": 116.54536666659017,
+      "median": 88.21509999688715,
+      "p95": 169.25469999405323,
+      "max": 178.25909999373835
+    },
+    "average_candidate_count": 1
+  },
+  "peer_stats": {
+    "peer-a1": {
+      "status": "ok",
+      "service": "peer:peer-a1",
+      "peer_id": "peer-a1",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 1,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-a2": {
+      "status": "ok",
+      "service": "peer:peer-a2",
+      "peer_id": "peer-a2",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 1,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-b1": {
+      "status": "ok",
+      "service": "peer:peer-b1",
+      "peer_id": "peer-b1",
+      "location_id": "Building-B",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 0,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    }
+  },
+  "coordinator_stats": {
+    "status": "ok",
+    "service": "coordinator",
+    "peer_count": 3,
+    "object_count": 1,
+    "provider_entries": 3,
+    "max_providers_per_lookup": 3,
+    "peer_timeout_seconds": 30,
+    "provider_selection_policy": "locality_then_load",
+    "total_upload_requests": 2,
+    "total_upload_bytes": 2097152,
+    "peer_loads": [
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 1,
+        "total_upload_bytes": 1048576,
+        "last_transfer_at": "2026-03-24T22:02:37.550836"
+      },
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      },
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 1,
+        "total_upload_bytes": 1048576,
+        "last_transfer_at": "2026-03-24T22:02:36.571081"
+      }
+    ]
+  },
+  "generated_from": {
+    "request_profiles": [],
+    "churn_profiles": [],
+    "steps": [
+      {
+        "action": "fetch",
+        "peer": "peer-a1",
+        "object_id": "lecture-1-video"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-a2",
+        "object_id": "lecture-1-video"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-b1",
+        "object_id": "lecture-1-video"
+      }
+    ]
+  }
+}

@@ -1,0 +1,520 @@
+{
+  "scenario": "Correlated Class Exit Churn",
+  "description": "Two peers leave together to emulate a class ending, then return after a short downtime.",
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
+  "requested_duration_seconds": 26,
+  "actual_duration_seconds": 27.735875700003817,
+  "event_count": 26,
+  "events": [
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 0.31782679481783593,
+      "actual_started_seconds": 0.5937354999914533,
+      "runner_latency_ms": 197.93829999980517,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 181.70001200019215,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 1.5547949981178155,
+      "actual_started_seconds": 1.5683492999960436,
+      "runner_latency_ms": 95.9939000022132,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 84.77907399992546,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 1.5965931637689013,
+      "actual_started_seconds": 1.664600199990673,
+      "runner_latency_ms": 3.435199992964044,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a2",
+      "candidate_count": 0,
+      "service_latency_ms": 0.25728600007823843,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "lab-starter",
+      "scheduled_at_seconds": 2.4489185380347624,
+      "actual_started_seconds": 2.4590078000037465,
+      "runner_latency_ms": 158.4731000039028,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 148.25541899995187,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "lab-starter",
+      "scheduled_at_seconds": 3.7992730063733737,
+      "actual_started_seconds": 3.8111101999966195,
+      "runner_latency_ms": 73.05720000294968,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 54.27012400014064,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 5.053552881033624,
+      "actual_started_seconds": 5.064890099994955,
+      "runner_latency_ms": 4.13670000853017,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.2803669999593694,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 5.362280914547007,
+      "actual_started_seconds": 5.371534299993073,
+      "runner_latency_ms": 4.2781999945873395,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a2",
+      "candidate_count": 0,
+      "service_latency_ms": 0.32183200005420076,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "lab-starter",
+      "scheduled_at_seconds": 5.892656838759088,
+      "actual_started_seconds": 5.9001021000003675,
+      "runner_latency_ms": 5.674100000760518,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.4109230001176911,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "lab-starter",
+      "scheduled_at_seconds": 6.037260313668911,
+      "actual_started_seconds": 6.040328100003535,
+      "runner_latency_ms": 3.7402000016300008,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.2289750000272761,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "lab-starter",
+      "scheduled_at_seconds": 6.394267984578837,
+      "actual_started_seconds": 6.4033135999925435,
+      "runner_latency_ms": 3.494400007184595,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.19309200001771387,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 6.766994874229113,
+      "actual_started_seconds": 6.768773000003421,
+      "runner_latency_ms": 7.0592000120086595,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.20342800007711048,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 7.160196129224035,
+      "actual_started_seconds": 7.169337300001644,
+      "runner_latency_ms": 4.267099997377954,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a2",
+      "candidate_count": 0,
+      "service_latency_ms": 0.2886889999444975,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 10.83466178588489,
+      "actual_started_seconds": 10.837766399999964,
+      "runner_latency_ms": 88.86449999408796,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a2:7000",
+      "candidate_count": 2,
+      "service_latency_ms": 75.94265500006259,
+      "size": 1048576
+    },
+    {
+      "action": "kill",
+      "peer": "peer-a1",
+      "scheduled_at_seconds": 11.0,
+      "actual_started_seconds": 11.00305089999165,
+      "status": "issued"
+    },
+    {
+      "action": "kill",
+      "peer": "peer-a2",
+      "scheduled_at_seconds": 11.0,
+      "actual_started_seconds": 11.010975600001984,
+      "status": "issued"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 11.960829925143141,
+      "actual_started_seconds": 11.96987449999142,
+      "runner_latency_ms": 2300.3936000022804,
+      "status": "failed",
+      "source": "error",
+      "provider": null,
+      "candidate_count": 0,
+      "service_latency_ms": 0.0,
+      "size": 0,
+      "error": "All connection attempts failed"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "department-calendar",
+      "scheduled_at_seconds": 13.472655563225286,
+      "actual_started_seconds": 14.270522599996184,
+      "runner_latency_ms": 2290.538100001868,
+      "status": "failed",
+      "source": "error",
+      "provider": null,
+      "candidate_count": 0,
+      "service_latency_ms": 0.0,
+      "size": 0,
+      "error": "All connection attempts failed"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 13.518139376885115,
+      "actual_started_seconds": 16.561309299999266,
+      "runner_latency_ms": 10.659200008376502,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.2768389999801002,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 14.263248402730259,
+      "actual_started_seconds": 16.572292800003197,
+      "runner_latency_ms": 4.8420999955851585,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.23401600014949508,
+      "size": 1048576
+    },
+    {
+      "action": "restart",
+      "peer": "peer-a1",
+      "service": "peer-a1",
+      "scheduled_at_seconds": 17.0,
+      "actual_started_seconds": 17.006865499992273,
+      "status": "restarted"
+    },
+    {
+      "action": "restart",
+      "peer": "peer-a2",
+      "service": "peer-a2",
+      "scheduled_at_seconds": 17.0,
+      "actual_started_seconds": 22.29229509999277,
+      "status": "restarted"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 17.619739458364723,
+      "actual_started_seconds": 27.57842459999665,
+      "runner_latency_ms": 11.579800004255958,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 2.227016000006188,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 17.6282133311728,
+      "actual_started_seconds": 27.590263699996285,
+      "runner_latency_ms": 123.44519999169279,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-b1:7000",
+      "candidate_count": 3,
+      "service_latency_ms": 108.33577799985505,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 20.340482803729326,
+      "actual_started_seconds": 27.71389569999883,
+      "runner_latency_ms": 6.209099999978207,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.22207600000001548,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 20.397804001063236,
+      "actual_started_seconds": 27.72070679999888,
+      "runner_latency_ms": 10.208400010014884,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a2",
+      "candidate_count": 0,
+      "service_latency_ms": 1.020182999809549,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 21.239855052549927,
+      "actual_started_seconds": 27.731164500000887,
+      "runner_latency_ms": 4.497299989452586,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.24572299980718526,
+      "size": 1048576
+    }
+  ],
+  "summary": {
+    "total_events": 26,
+    "fetch_count": 22,
+    "successful_fetch_count": 20,
+    "failed_fetch_count": 2,
+    "success_rate": 0.9090909090909091,
+    "source_counts": {
+      "origin": 2,
+      "peer": 4,
+      "cache": 14
+    },
+    "bytes_by_source": {
+      "origin": 2097152,
+      "peer": 4194304,
+      "cache": 14680064
+    },
+    "service_latency_ms": {
+      "min": 0.19309200001771387,
+      "mean": 32.98467535000782,
+      "median": 0.3052604999993491,
+      "p95": 149.9276486499639,
+      "max": 181.70001200019215
+    },
+    "runner_latency_ms": {
+      "min": 3.435199992964044,
+      "mean": 41.09266000086791,
+      "median": 6.634150005993433,
+      "p95": 160.44636000369795,
+      "max": 197.93829999980517
+    },
+    "average_candidate_count": 0.35
+  },
+  "peer_stats": {
+    "peer-a1": {
+      "status": "ok",
+      "service": "peer:peer-a1",
+      "peer_id": "peer-a1",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 0,
+      "cache_object_count": 0,
+      "cache_hit_count": 0,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-a2": {
+      "status": "ok",
+      "service": "peer:peer-a2",
+      "peer_id": "peer-a2",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 1,
+      "cache_miss_count": 2,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-b1": {
+      "status": "ok",
+      "service": "peer:peer-b1",
+      "peer_id": "peer-b1",
+      "location_id": "Building-B",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 6,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    }
+  },
+  "coordinator_stats": {
+    "status": "ok",
+    "service": "coordinator",
+    "peer_count": 3,
+    "object_count": 2,
+    "provider_entries": 5,
+    "max_providers_per_lookup": 3,
+    "peer_timeout_seconds": 30,
+    "provider_selection_policy": "locality_then_load",
+    "total_upload_requests": 4,
+    "total_upload_bytes": 4194304,
+    "peer_loads": [
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 1,
+        "total_upload_bytes": 1048576,
+        "last_transfer_at": "2026-03-24T22:03:43.178564"
+      },
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 2,
+        "total_upload_bytes": 2097152,
+        "last_transfer_at": "2026-03-24T22:03:36.424540"
+      },
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 1,
+        "total_upload_bytes": 1048576,
+        "last_transfer_at": "2026-03-24T22:04:00.532269"
+      }
+    ]
+  },
+  "generated_from": {
+    "request_profiles": [
+      {
+        "kind": "course_burst",
+        "peers": [
+          "peer-a1",
+          "peer-a2"
+        ],
+        "objects": [
+          {
+            "id": "project-demo",
+            "weight": 4
+          },
+          {
+            "id": "lab-starter",
+            "weight": 2
+          }
+        ],
+        "start_seconds": 0,
+        "duration_seconds": 10,
+        "count": 12
+      },
+      {
+        "kind": "random_uniform",
+        "peers": [
+          "peer-a1",
+          "peer-a2",
+          "peer-b1"
+        ],
+        "objects": [
+          {
+            "id": "project-demo",
+            "weight": 3
+          },
+          {
+            "id": "department-calendar",
+            "weight": 1
+          }
+        ],
+        "start_seconds": 10,
+        "end_seconds": 22,
+        "count": 10
+      }
+    ],
+    "churn_profiles": [
+      {
+        "kind": "correlated",
+        "events": [
+          {
+            "at_seconds": 11,
+            "peers": [
+              "peer-a1",
+              "peer-a2"
+            ],
+            "downtime_seconds": 6
+          }
+        ]
+      }
+    ],
+    "steps": []
+  }
+}
