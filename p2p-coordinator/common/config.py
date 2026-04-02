@@ -31,12 +31,21 @@ class CommonSettings:
     cleanup_interval_seconds: int
     max_providers_per_lookup: int
     lookup_timeout_seconds: float
+    intra_location_delay_ms: int
+    inter_location_delay_ms: int
+    origin_delay_ms: int
 
 
 @dataclass(frozen=True)
 class CoordinatorSettings(CommonSettings):
     provider_selection_policy: str
     service_name: str = "coordinator"
+
+
+@dataclass(frozen=True)
+class OriginSettings:
+    origin_delay_ms: int
+    service_name: str = "origin"
 
 
 @dataclass(frozen=True)
@@ -58,6 +67,9 @@ def get_common_settings() -> CommonSettings:
         cleanup_interval_seconds=_get_int("COORDINATOR_CLEANUP_INTERVAL_SECONDS", 10),
         max_providers_per_lookup=_get_int("MAX_PROVIDERS_PER_LOOKUP", 3),
         lookup_timeout_seconds=_get_float("LOOKUP_TIMEOUT_SECONDS", 2.0),
+        intra_location_delay_ms=_get_int("INTRA_LOCATION_DELAY_MS", 5),
+        inter_location_delay_ms=_get_int("INTER_LOCATION_DELAY_MS", 35),
+        origin_delay_ms=_get_int("ORIGIN_DELAY_MS", 120),
     )
 
 
@@ -69,8 +81,16 @@ def get_coordinator_settings() -> CoordinatorSettings:
         cleanup_interval_seconds=common.cleanup_interval_seconds,
         max_providers_per_lookup=common.max_providers_per_lookup,
         lookup_timeout_seconds=common.lookup_timeout_seconds,
+        intra_location_delay_ms=common.intra_location_delay_ms,
+        inter_location_delay_ms=common.inter_location_delay_ms,
+        origin_delay_ms=common.origin_delay_ms,
         provider_selection_policy=_get_str("PROVIDER_SELECTION_POLICY", "locality_then_load"),
     )
+
+
+def get_origin_settings() -> OriginSettings:
+    common = get_common_settings()
+    return OriginSettings(origin_delay_ms=common.origin_delay_ms)
 
 
 def get_peer_settings() -> PeerSettings:
@@ -82,6 +102,9 @@ def get_peer_settings() -> PeerSettings:
         cleanup_interval_seconds=common.cleanup_interval_seconds,
         max_providers_per_lookup=common.max_providers_per_lookup,
         lookup_timeout_seconds=common.lookup_timeout_seconds,
+        intra_location_delay_ms=common.intra_location_delay_ms,
+        inter_location_delay_ms=common.inter_location_delay_ms,
+        origin_delay_ms=common.origin_delay_ms,
         peer_id=peer_id,
         location_id=os.getenv("LOCATION_ID", "Building-A"),
         coordinator_url=os.getenv("COORDINATOR_URL", "http://coordinator:8000"),

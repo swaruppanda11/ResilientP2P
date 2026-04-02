@@ -84,6 +84,7 @@ class ExperimentRunner:
         return {
             "scenario": scenario_name,
             "description": scenario.get("description"),
+            "topology": self.spec.get("topology", {}),
             "requested_duration_seconds": scenario.get("duration_seconds"),
             "actual_duration_seconds": scenario_duration,
             "event_count": len(events),

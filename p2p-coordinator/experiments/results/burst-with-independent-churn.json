@@ -1,8 +1,13 @@
 {
   "scenario": "Burst With Independent Churn",
   "description": "One peer drops during an active course burst and rejoins later.",
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
   "requested_duration_seconds": 24,
-  "actual_duration_seconds": 20.85630750000564,
+  "actual_duration_seconds": 20.364718999990146,
   "event_count": 22,
   "events": [
     {
@@ -10,13 +15,13 @@
       "peer": "peer-b1",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 0.9737720835323729,
-      "actual_started_seconds": 0.9743142000006628,
-      "runner_latency_ms": 158.85550000530202,
+      "actual_started_seconds": 0.9838778999983333,
+      "runner_latency_ms": 174.3548000085866,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 146.6071620002367,
+      "service_latency_ms": 159.41735000001245,
       "size": 1048576
     },
     {
@@ -24,13 +29,13 @@
       "peer": "peer-a2",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 2.176712997364942,
-      "actual_started_seconds": 2.1836436000012327,
-      "runner_latency_ms": 107.515700001386,
+      "actual_started_seconds": 2.180283599998802,
+      "runner_latency_ms": 96.12270000798162,
       "status": "success",
       "source": "peer",
       "provider": "http://peer-b1:7000",
       "candidate_count": 1,
-      "service_latency_ms": 83.79835300002014,
+      "service_latency_ms": 82.76374299998679,
       "size": 1048576
     },
     {
@@ -38,13 +43,13 @@
       "peer": "peer-a2",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 2.235230429276462,
-      "actual_started_seconds": 2.2912338000023738,
-      "runner_latency_ms": 6.69940000079805,
+      "actual_started_seconds": 2.2766387999872677,
+      "runner_latency_ms": 3.324300007079728,
       "status": "success",
       "source": "cache",
       "provider": "peer-a2",
       "candidate_count": 0,
-      "service_latency_ms": 0.3735830000550777,
+      "service_latency_ms": 0.27034499998990213,
       "size": 1048576
     },
     {
@@ -52,13 +57,13 @@
       "peer": "peer-b1",
       "object_id": "practice-set",
       "scheduled_at_seconds": 2.783727109613079,
-      "actual_started_seconds": 2.7873091000001295,
-      "runner_latency_ms": 167.89450000214856,
+      "actual_started_seconds": 2.7898644999950193,
+      "runner_latency_ms": 154.6061999979429,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 157.00020500025857,
+      "service_latency_ms": 144.30919699998412,
       "size": 1048576
     },
     {
@@ -66,13 +71,13 @@
       "peer": "peer-b1",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 3.257252507470354,
-      "actual_started_seconds": 3.262772900001437,
-      "runner_latency_ms": 7.265100000950042,
+      "actual_started_seconds": 3.264344399998663,
+      "runner_latency_ms": 2.9270000086398795,
       "status": "success",
       "source": "cache",
       "provider": "peer-b1",
       "candidate_count": 0,
-      "service_latency_ms": 0.34629199990376947,
+      "service_latency_ms": 0.16477199983455648,
       "size": 1048576
     },
     {
@@ -80,13 +85,13 @@
       "peer": "peer-a1",
       "object_id": "practice-set",
       "scheduled_at_seconds": 3.428485953248667,
-      "actual_started_seconds": 3.435574400005862,
-      "runner_latency_ms": 115.86949999764329,
+      "actual_started_seconds": 3.4297997999965446,
+      "runner_latency_ms": 94.07609999470878,
       "status": "success",
       "source": "peer",
       "provider": "http://peer-b1:7000",
       "candidate_count": 1,
-      "service_latency_ms": 95.78878500042265,
+      "service_latency_ms": 82.31694599999173,
       "size": 1048576
     },
     {
@@ -94,13 +99,13 @@
       "peer": "peer-a1",
       "object_id": "practice-set",
       "scheduled_at_seconds": 4.051431490429501,
-      "actual_started_seconds": 4.060736500003259,
-      "runner_latency_ms": 10.170599998673424,
+      "actual_started_seconds": 4.060463499990874,
+      "runner_latency_ms": 4.055400000652298,
       "status": "success",
       "source": "cache",
       "provider": "peer-a1",
       "candidate_count": 0,
-      "service_latency_ms": 0.6082120003156888,
+      "service_latency_ms": 0.20096799994462344,
       "size": 1048576
     },
     {
@@ -108,13 +113,13 @@
       "peer": "peer-b1",
       "object_id": "practice-set",
       "scheduled_at_seconds": 4.104495939699301,
-      "actual_started_seconds": 4.106941400001233,
-      "runner_latency_ms": 9.68049999937648,
+      "actual_started_seconds": 4.116019900000538,
+      "runner_latency_ms": 8.030500001041219,
       "status": "success",
       "source": "cache",
       "provider": "peer-b1",
       "candidate_count": 0,
-      "service_latency_ms": 0.5107359997964522,
+      "service_latency_ms": 0.36670899999080575,
       "size": 1048576
     },
     {
@@ -122,13 +127,13 @@
       "peer": "peer-b1",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 4.973789803185301,
-      "actual_started_seconds": 4.987346900001285,
-      "runner_latency_ms": 9.894200004055165,
+      "actual_started_seconds": 4.97573759999068,
+      "runner_latency_ms": 4.179399998974986,
       "status": "success",
       "source": "cache",
       "provider": "peer-b1",
       "candidate_count": 0,
-      "service_latency_ms": 0.5811539999740489,
+      "service_latency_ms": 0.18595899996398657,
       "size": 1048576
     },
     {
@@ -136,13 +141,13 @@
       "peer": "peer-a2",
       "object_id": "practice-set",
       "scheduled_at_seconds": 5.318982208922723,
-      "actual_started_seconds": 5.326119299999846,
-      "runner_latency_ms": 170.75640000257408,
+      "actual_started_seconds": 5.319855699999607,
+      "runner_latency_ms": 55.247000011149794,
       "status": "success",
       "source": "peer",
       "provider": "http://peer-a1:7000",
       "candidate_count": 2,
-      "service_latency_ms": 147.6429460003601,
+      "service_latency_ms": 48.437128000159646,
       "size": 1048576
     },
     {
@@ -150,13 +155,13 @@
       "peer": "peer-a2",
       "object_id": "practice-set",
       "scheduled_at_seconds": 5.873277493463222,
-      "actual_started_seconds": 5.882373200001894,
-      "runner_latency_ms": 7.897799994680099,
+      "actual_started_seconds": 5.880425600000308,
+      "runner_latency_ms": 4.7778000007383525,
       "status": "success",
       "source": "cache",
       "provider": "peer-a2",
       "candidate_count": 0,
-      "service_latency_ms": 0.3274010000495764,
+      "service_latency_ms": 0.22289900016403408,
       "size": 1048576
     },
     {
@@ -164,20 +169,20 @@
       "peer": "peer-a1",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 5.906905475593786,
-      "actual_started_seconds": 5.913100600002508,
-      "runner_latency_ms": 100.23519999958808,
+      "actual_started_seconds": 5.9203954999975394,
+      "runner_latency_ms": 60.04620000021532,
       "status": "success",
       "source": "peer",
       "provider": "http://peer-a2:7000",
       "candidate_count": 2,
-      "service_latency_ms": 90.43792800002848,
+      "service_latency_ms": 52.23457800002507,
       "size": 1048576
     },
     {
       "action": "kill",
       "peer": "peer-a2",
       "scheduled_at_seconds": 7.436524022667953,
-      "actual_started_seconds": 7.444476700002269,
+      "actual_started_seconds": 7.446431999997003,
       "status": "issued"
     },
     {
@@ -185,8 +190,8 @@
       "peer": "peer-a2",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 7.507193280365811,
-      "actual_started_seconds": 7.508163300000888,
-      "runner_latency_ms": 12.523500001407228,
+      "actual_started_seconds": 7.5169585999974515,
+      "runner_latency_ms": 7.708199991611764,
       "status": "failed",
       "source": "error",
       "provider": null,
@@ -200,13 +205,13 @@
       "peer": "peer-a1",
       "object_id": "practice-set",
       "scheduled_at_seconds": 8.452164439136475,
-      "actual_started_seconds": 8.454886200001056,
-      "runner_latency_ms": 8.273100000224076,
+      "actual_started_seconds": 8.459041199996136,
+      "runner_latency_ms": 5.543300008866936,
       "status": "success",
       "source": "cache",
       "provider": "peer-a1",
       "candidate_count": 0,
-      "service_latency_ms": 0.4181660001449927,
+      "service_latency_ms": 0.24708600017220306,
       "size": 1048576
     },
     {
@@ -214,8 +219,8 @@
       "peer": "peer-a2",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 8.899582219701603,
-      "actual_started_seconds": 8.902728000000934,
-      "runner_latency_ms": 2303.8404999970226,
+      "actual_started_seconds": 8.908292299995082,
+      "runner_latency_ms": 2256.9225000042934,
       "status": "failed",
       "source": "error",
       "provider": null,
@@ -229,13 +234,13 @@
       "peer": "peer-a1",
       "object_id": "practice-set",
       "scheduled_at_seconds": 8.951975178410372,
-      "actual_started_seconds": 11.206648999999743,
-      "runner_latency_ms": 6.902099994476885,
+      "actual_started_seconds": 11.165495099994587,
+      "runner_latency_ms": 3.7691000034101307,
       "status": "success",
       "source": "cache",
       "provider": "peer-a1",
       "candidate_count": 0,
-      "service_latency_ms": 0.34733600023173494,
+      "service_latency_ms": 0.2716750000217871,
       "size": 1048576
     },
     {
@@ -243,13 +248,13 @@
       "peer": "peer-b1",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 9.473792823920759,
-      "actual_started_seconds": 11.213609500002349,
-      "runner_latency_ms": 14.85129999491619,
+      "actual_started_seconds": 11.169452999994974,
+      "runner_latency_ms": 6.9491000031121075,
       "status": "success",
       "source": "cache",
       "provider": "peer-b1",
       "candidate_count": 0,
-      "service_latency_ms": 0.7051990000945807,
+      "service_latency_ms": 0.2140419999250298,
       "size": 1048576
     },
     {
@@ -257,13 +262,13 @@
       "peer": "peer-a1",
       "object_id": "practice-set",
       "scheduled_at_seconds": 11.332026393489572,
-      "actual_started_seconds": 11.351991800001997,
-      "runner_latency_ms": 15.93239999783691,
+      "actual_started_seconds": 11.34259229998861,
+      "runner_latency_ms": 3.417900006752461,
       "status": "success",
       "source": "cache",
       "provider": "peer-a1",
       "candidate_count": 0,
-      "service_latency_ms": 0.2713159997256298,
+      "service_latency_ms": 0.21783100009997725,
       "size": 1048576
     },
     {
@@ -271,13 +276,13 @@
       "peer": "peer-b1",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 12.063896604350882,
-      "actual_started_seconds": 12.069254900001397,
-      "runner_latency_ms": 7.4183999968227,
+      "actual_started_seconds": 12.073917799993069,
+      "runner_latency_ms": 4.365100001450628,
       "status": "success",
       "source": "cache",
       "provider": "peer-b1",
       "candidate_count": 0,
-      "service_latency_ms": 0.25842700006251107,
+      "service_latency_ms": 0.2256769998894015,
       "size": 1048576
     },
     {
@@ -285,8 +290,8 @@
       "peer": "peer-a2",
       "object_id": "midterm-review",
       "scheduled_at_seconds": 12.130771334573776,
-      "actual_started_seconds": 12.145856800001638,
-      "runner_latency_ms": 2298.9379999999073,
+      "actual_started_seconds": 12.142157299997052,
+      "runner_latency_ms": 2287.0696999889333,
       "status": "failed",
       "source": "error",
       "provider": null,
@@ -300,7 +305,7 @@
       "peer": "peer-a2",
       "service": "peer-a2",
       "scheduled_at_seconds": 13.436524022667953,
-      "actual_started_seconds": 14.444862100004684,
+      "actual_started_seconds": 14.429454199998872,
       "status": "restarted"
     }
   ],
@@ -321,18 +326,18 @@
       "cache": 11534336
     },
     "service_latency_ms": {
-      "min": 0.25842700006251107,
-      "mean": 42.70724711774592,
-      "median": 0.5811539999740489,
-      "p95": 149.5143978003398,
-      "max": 157.00020500025857
+      "min": 0.16477199983455648,
+      "mean": 33.65099441177389,
+      "median": 0.27034499998990213,
+      "p95": 147.3308275999898,
+      "max": 159.41735000001245
     },
     "runner_latency_ms": {
-      "min": 6.69940000079805,
-      "mean": 54.47715882302659,
-      "median": 10.170599998673424,
-      "p95": 168.46688000223367,
-      "max": 170.75640000257408
+      "min": 2.9270000086398795,
+      "mean": 40.3407000036061,
+      "median": 5.543300008866936,
+      "p95": 158.55592000007164,
+      "max": 174.3548000085866
     },
     "average_candidate_count": 0.35294117647058826
   },
@@ -390,22 +395,22 @@
     "total_upload_bytes": 4194304,
     "peer_loads": [
       {
-        "peer_id": "peer-a1",
-        "total_upload_requests": 1,
-        "total_upload_bytes": 1048576,
-        "last_transfer_at": "2026-03-24T05:36:50.318937"
+        "peer_id": "peer-b1",
+        "total_upload_requests": 2,
+        "total_upload_bytes": 2097152,
+        "last_transfer_at": "2026-03-24T22:03:08.688089"
       },
       {
         "peer_id": "peer-a2",
         "total_upload_requests": 1,
         "total_upload_bytes": 1048576,
-        "last_transfer_at": "2026-03-24T05:36:50.868769"
+        "last_transfer_at": "2026-03-24T22:03:11.037128"
       },
       {
-        "peer_id": "peer-b1",
-        "total_upload_requests": 2,
-        "total_upload_bytes": 2097152,
-        "last_transfer_at": "2026-03-24T05:36:48.452220"
+        "peer_id": "peer-a1",
+        "total_upload_requests": 1,
+        "total_upload_bytes": 1048576,
+        "last_transfer_at": "2026-03-24T22:03:10.455058"
       }
     ]
   },

@@ -7,6 +7,11 @@
   "bootstrap_wait_seconds": 4,
   "service_ready_timeout_seconds": 45,
   "reset_stack_before_each_scenario": true,
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
   "peer_map": {
     "peer-a1": {
       "url": "http://localhost:7001",

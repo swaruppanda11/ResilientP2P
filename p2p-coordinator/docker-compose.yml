@@ -16,6 +16,8 @@ services:
     build:
       context: .
       dockerfile: origin/Dockerfile
+    environment:
+      - ORIGIN_DELAY_MS=120
     ports:
       - "8001:8001"
     networks:
@@ -30,6 +32,8 @@ services:
       - LOCATION_ID=Building-A
       - COORDINATOR_URL=http://coordinator:8000
       - ORIGIN_URL=http://origin:8001
+      - INTRA_LOCATION_DELAY_MS=5
+      - INTER_LOCATION_DELAY_MS=35
     ports:
       - "7001:7000"
     depends_on:
@@ -47,6 +51,8 @@ services:
       - LOCATION_ID=Building-A
       - COORDINATOR_URL=http://coordinator:8000
       - ORIGIN_URL=http://origin:8001
+      - INTRA_LOCATION_DELAY_MS=5
+      - INTER_LOCATION_DELAY_MS=35
     ports:
       - "7002:7000"
     depends_on:
@@ -64,6 +70,8 @@ services:
       - LOCATION_ID=Building-B
       - COORDINATOR_URL=http://coordinator:8000
       - ORIGIN_URL=http://origin:8001
+      - INTRA_LOCATION_DELAY_MS=5
+      - INTER_LOCATION_DELAY_MS=35
     ports:
       - "7003:7000"
     depends_on:
