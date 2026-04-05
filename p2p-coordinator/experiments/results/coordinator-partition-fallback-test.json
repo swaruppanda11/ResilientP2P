@@ -7,7 +7,7 @@
     "origin_delay_ms": 120
   },
   "requested_duration_seconds": null,
-  "actual_duration_seconds": 27.01181059994269,
+  "actual_duration_seconds": 16.362550500081852,
   "event_count": 5,
   "events": [
     {
@@ -15,55 +15,55 @@
       "peer": "peer-a1",
       "object_id": "partition-fallback-1",
       "scheduled_at_seconds": 0.0,
-      "actual_started_seconds": 0.3740965999895707,
-      "runner_latency_ms": 5742.165800067596,
+      "actual_started_seconds": 0.22101229999680072,
+      "runner_latency_ms": 173.34109998773783,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 5670.685307999975,
+      "service_latency_ms": 168.30855900002462,
       "size": 1048576
     },
     {
       "action": "disconnect",
       "service": "coordinator",
-      "scheduled_at_seconds": 1.0,
-      "actual_started_seconds": 6.116292399936356,
+      "scheduled_at_seconds": 4.0,
+      "actual_started_seconds": 4.0089082000777125,
       "status": "disconnected"
     },
     {
       "action": "fetch",
       "peer": "peer-b1",
       "object_id": "partition-fallback-1",
-      "scheduled_at_seconds": 2.0,
-      "actual_started_seconds": 6.617210699943826,
-      "runner_latency_ms": 6163.848199998029,
+      "scheduled_at_seconds": 6.0,
+      "actual_started_seconds": 6.003383000032045,
+      "runner_latency_ms": 2070.0925000710413,
       "status": "success",
-      "source": "origin",
-      "provider": "http://origin:8001",
-      "candidate_count": 0,
-      "service_latency_ms": 6162.742694999906,
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 2066.974328000015,
       "size": 1048576
     },
     {
       "action": "fetch",
       "peer": "peer-b1",
       "object_id": "partition-new-object-1",
-      "scheduled_at_seconds": 2.0,
-      "actual_started_seconds": 12.78112489997875,
-      "runner_latency_ms": 11524.204000015743,
+      "scheduled_at_seconds": 6.0,
+      "actual_started_seconds": 8.073565800092183,
+      "runner_latency_ms": 5692.123799934052,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 11655.11507400015,
+      "service_latency_ms": 5692.188015999932,
       "size": 1048576
     },
     {
       "action": "connect",
       "service": "coordinator",
-      "scheduled_at_seconds": 3.0,
-      "actual_started_seconds": 24.305355399963446,
+      "scheduled_at_seconds": 7.0,
+      "actual_started_seconds": 13.765711600077339,
       "status": "connected"
     }
   ],
@@ -74,26 +74,28 @@
     "failed_fetch_count": 0,
     "success_rate": 1.0,
     "source_counts": {
-      "origin": 3
+      "origin": 2,
+      "peer": 1
     },
     "bytes_by_source": {
-      "origin": 3145728
+      "origin": 2097152,
+      "peer": 1048576
     },
     "service_latency_ms": {
-      "min": 5670.685307999975,
-      "mean": 7829.514359000011,
-      "median": 6162.742694999906,
-      "p95": 11105.877836100124,
-      "max": 11655.11507400015
+      "min": 168.30855900002462,
+      "mean": 2642.4903009999903,
+      "median": 2066.974328000015,
+      "p95": 5329.66664719994,
+      "max": 5692.188015999932
     },
     "runner_latency_ms": {
-      "min": 5742.165800067596,
-      "mean": 7810.072666693789,
-      "median": 6163.848199998029,
-      "p95": 10988.168420013972,
-      "max": 11524.204000015743
+      "min": 173.34109998773783,
+      "mean": 2645.1857999976105,
+      "median": 2070.0925000710413,
+      "p95": 5329.920669947751,
+      "max": 5692.123799934052
     },
-    "average_candidate_count": 0
+    "average_candidate_count": 0.3333333333333333
   },
   "peer_stats": {
     "peer-a1": {
@@ -104,7 +106,7 @@
       "cache_capacity_bytes": 10485760,
       "cache_size_bytes": 1048576,
       "cache_object_count": 1,
-      "cache_hit_count": 0,
+      "cache_hit_count": 1,
       "cache_miss_count": 1,
       "cache_eviction_count": 0,
       "cache_rejected_write_count": 0
@@ -128,8 +130,8 @@
       "peer_id": "peer-b1",
       "location_id": "Building-B",
       "cache_capacity_bytes": 10485760,
-      "cache_size_bytes": 2097152,
-      "cache_object_count": 2,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
       "cache_hit_count": 0,
       "cache_miss_count": 2,
       "cache_eviction_count": 0,
@@ -149,6 +151,12 @@
     "total_upload_bytes": 0,
     "peer_loads": [
       {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      },
+      {
         "peer_id": "peer-a1",
         "total_upload_requests": 0,
         "total_upload_bytes": 0,
@@ -156,12 +164,6 @@
       },
       {
         "peer_id": "peer-a2",
-        "total_upload_requests": 0,
-        "total_upload_bytes": 0,
-        "last_transfer_at": null
-      },
-      {
-        "peer_id": "peer-b1",
         "total_upload_requests": 0,
         "total_upload_bytes": 0,
         "last_transfer_at": null
@@ -179,7 +181,7 @@
       },
       {
         "action": "wait",
-        "seconds": 1
+        "seconds": 4
       },
       {
         "action": "disconnect",
@@ -187,7 +189,7 @@
       },
       {
         "action": "wait",
-        "seconds": 1
+        "seconds": 2
       },
       {
         "action": "fetch",

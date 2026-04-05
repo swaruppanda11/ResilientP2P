@@ -64,7 +64,8 @@ class ExperimentRunner:
 
         if scenario.get("reset_stack_before", self.default_reset_stack):
             print("[.] Resetting stack before scenario...")
-            await self._compose_command(["restart", *self.service_names])
+            await self._compose_command(["down"])
+            await self._compose_command(["up", "-d", *self.service_names])
             await asyncio.sleep(float(scenario.get("bootstrap_wait_seconds", self.bootstrap_wait_seconds)))
             await self._wait_for_stack_ready()
 

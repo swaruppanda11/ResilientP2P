@@ -161,9 +161,9 @@
       "description": "Disconnect the coordinator from the Docker network to force DHT fallback under network partition rather than clean crash.",
       "steps": [
         { "action": "fetch", "peer": "peer-a1", "object_id": "partition-fallback-1" },
-        { "action": "wait", "seconds": 1 },
+        { "action": "wait", "seconds": 4 },
         { "action": "disconnect", "service": "coordinator" },
-        { "action": "wait", "seconds": 1 },
+        { "action": "wait", "seconds": 2 },
         { "action": "fetch", "peer": "peer-b1", "object_id": "partition-fallback-1" },
         { "action": "fetch", "peer": "peer-b1", "object_id": "partition-new-object-1" },
         { "action": "wait", "seconds": 1 },

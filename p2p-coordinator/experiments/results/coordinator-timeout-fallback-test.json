@@ -7,7 +7,7 @@
     "origin_delay_ms": 120
   },
   "requested_duration_seconds": null,
-  "actual_duration_seconds": 20.83202440000605,
+  "actual_duration_seconds": 8.597896100021899,
   "event_count": 5,
   "events": [
     {
@@ -15,13 +15,13 @@
       "peer": "peer-a1",
       "object_id": "timeout-fallback-1",
       "scheduled_at_seconds": 0.0,
-      "actual_started_seconds": 0.3323685999494046,
-      "runner_latency_ms": 6115.920000011101,
+      "actual_started_seconds": 0.22352420003153384,
+      "runner_latency_ms": 174.53309998381883,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 6174.996319999991,
+      "service_latency_ms": 167.9970320000166,
       "size": 1048576
     },
     {
@@ -29,7 +29,7 @@
       "service": "coordinator",
       "delay_ms": 1200,
       "scheduled_at_seconds": 1.0,
-      "actual_started_seconds": 6.448320499970578,
+      "actual_started_seconds": 1.014578300062567,
       "status": "delayed"
     },
     {
@@ -37,13 +37,13 @@
       "peer": "peer-b1",
       "object_id": "timeout-fallback-1",
       "scheduled_at_seconds": 2.0,
-      "actual_started_seconds": 6.867912800051272,
-      "runner_latency_ms": 2049.926400068216,
+      "actual_started_seconds": 2.0142549000447616,
+      "runner_latency_ms": 3698.499200050719,
       "status": "success",
       "source": "peer",
       "provider": "http://peer-a1:7000",
       "candidate_count": 1,
-      "service_latency_ms": 2067.3254080002152,
+      "service_latency_ms": 3696.4084450000882,
       "size": 1048576
     },
     {
@@ -51,20 +51,20 @@
       "peer": "peer-b1",
       "object_id": "timeout-new-object-1",
       "scheduled_at_seconds": 2.0,
-      "actual_started_seconds": 8.917880899971351,
-      "runner_latency_ms": 11521.945199929178,
+      "actual_started_seconds": 5.712904600077309,
+      "runner_latency_ms": 2566.202100017108,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 11595.819140000003,
+      "service_latency_ms": 2568.3011450000777,
       "size": 1048576
     },
     {
       "action": "clear_delay",
       "service": "coordinator",
       "scheduled_at_seconds": 3.0,
-      "actual_started_seconds": 20.43985560000874,
+      "actual_started_seconds": 8.279125900007784,
       "status": "cleared"
     }
   ],
@@ -83,18 +83,18 @@
       "peer": 1048576
     },
     "service_latency_ms": {
-      "min": 2067.3254080002152,
-      "mean": 6612.713622666736,
-      "median": 6174.996319999991,
-      "p95": 11053.736858,
-      "max": 11595.819140000003
+      "min": 167.9970320000166,
+      "mean": 2144.2355406667275,
+      "median": 2568.3011450000777,
+      "p95": 3583.597715000087,
+      "max": 3696.4084450000882
     },
     "runner_latency_ms": {
-      "min": 2049.926400068216,
-      "mean": 6562.597200002831,
-      "median": 6115.920000011101,
-      "p95": 10981.34267993737,
-      "max": 11521.945199929178
+      "min": 174.53309998381883,
+      "mean": 2146.411466683882,
+      "median": 2566.202100017108,
+      "p95": 3585.269490047358,
+      "max": 3698.499200050719
     },
     "average_candidate_count": 0.3333333333333333
   },
@@ -131,8 +131,8 @@
       "peer_id": "peer-b1",
       "location_id": "Building-B",
       "cache_capacity_bytes": 10485760,
-      "cache_size_bytes": 1048576,
-      "cache_object_count": 1,
+      "cache_size_bytes": 2097152,
+      "cache_object_count": 2,
       "cache_hit_count": 0,
       "cache_miss_count": 2,
       "cache_eviction_count": 0,
@@ -142,15 +142,34 @@
   "coordinator_stats": {
     "status": "ok",
     "service": "coordinator",
-    "peer_count": 0,
-    "object_count": 0,
-    "provider_entries": 0,
+    "peer_count": 3,
+    "object_count": 2,
+    "provider_entries": 3,
     "max_providers_per_lookup": 3,
     "peer_timeout_seconds": 30,
     "provider_selection_policy": "locality_then_load",
-    "total_upload_requests": 0,
-    "total_upload_bytes": 0,
-    "peer_loads": []
+    "total_upload_requests": 1,
+    "total_upload_bytes": 1048576,
+    "peer_loads": [
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 1,
+        "total_upload_bytes": 1048576,
+        "last_transfer_at": "2026-04-05T16:57:04.458414"
+      },
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      },
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      }
+    ]
   },
   "generated_from": {
     "request_profiles": [],

@@ -7,7 +7,7 @@
     "origin_delay_ms": 120
   },
   "requested_duration_seconds": null,
-  "actual_duration_seconds": 15.310964199947193,
+  "actual_duration_seconds": 14.53445339994505,
   "event_count": 5,
   "events": [
     {
@@ -15,20 +15,20 @@
       "peer": "peer-a1",
       "object_id": "fallback-smoke-1",
       "scheduled_at_seconds": 0.0,
-      "actual_started_seconds": 0.3270177999511361,
-      "runner_latency_ms": 234.83870003838092,
+      "actual_started_seconds": 0.2255922999465838,
+      "runner_latency_ms": 183.57100000139326,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 229.60357100009787,
+      "service_latency_ms": 175.9118940000235,
       "size": 1048576
     },
     {
       "action": "kill",
       "service": "coordinator",
       "scheduled_at_seconds": 1.0,
-      "actual_started_seconds": 1.0081244999310002,
+      "actual_started_seconds": 1.0063619000138715,
       "status": "stopped"
     },
     {
@@ -36,13 +36,13 @@
       "peer": "peer-b1",
       "object_id": "fallback-smoke-1",
       "scheduled_at_seconds": 2.0,
-      "actual_started_seconds": 2.0014231000095606,
-      "runner_latency_ms": 2113.9382000546902,
+      "actual_started_seconds": 2.0064019999699667,
+      "runner_latency_ms": 2073.435499914922,
       "status": "success",
       "source": "peer",
       "provider": "http://peer-a1:7000",
       "candidate_count": 1,
-      "service_latency_ms": 2064.165473999765,
+      "service_latency_ms": 2065.090896000015,
       "size": 1048576
     },
     {
@@ -50,20 +50,20 @@
       "peer": "peer-b1",
       "object_id": "fallback-new-object-1",
       "scheduled_at_seconds": 2.0,
-      "actual_started_seconds": 4.115407399949618,
-      "runner_latency_ms": 6194.319100002758,
+      "actual_started_seconds": 4.079894799971953,
+      "runner_latency_ms": 5724.716000026092,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 6161.459731999912,
+      "service_latency_ms": 5710.648937999963,
       "size": 1048576
     },
     {
       "action": "restart",
       "service": "coordinator",
       "scheduled_at_seconds": 3.0,
-      "actual_started_seconds": 10.30975719995331,
+      "actual_started_seconds": 9.804630099912174,
       "status": "restarted"
     }
   ],
@@ -82,18 +82,18 @@
       "peer": 1048576
     },
     "service_latency_ms": {
-      "min": 229.60357100009787,
-      "mean": 2818.4095923332584,
-      "median": 2064.165473999765,
-      "p95": 5751.730306199897,
-      "max": 6161.459731999912
+      "min": 175.9118940000235,
+      "mean": 2650.5505760000005,
+      "median": 2065.090896000015,
+      "p95": 5346.093133799968,
+      "max": 5710.648937999963
     },
     "runner_latency_ms": {
-      "min": 234.83870003838092,
-      "mean": 2847.69866669861,
-      "median": 2113.9382000546902,
-      "p95": 5786.281010007951,
-      "max": 6194.319100002758
+      "min": 183.57100000139326,
+      "mean": 2660.574166647469,
+      "median": 2073.435499914922,
+      "p95": 5359.587950014975,
+      "max": 5724.716000026092
     },
     "average_candidate_count": 0.3333333333333333
   },
