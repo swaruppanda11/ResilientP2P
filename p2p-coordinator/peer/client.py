@@ -252,8 +252,7 @@ class PeerClient:
                     write_result = self.cache.put(metadata, data)
                     self._log_cache_write_metrics(object_id, write_result)
                     if write_result.stored:
-                        await self._announce_dht(object_id)
-                        await self.publish(metadata)
+                        self._schedule_post_store_updates(metadata)
 
                 latency = (time.perf_counter() - start_time) * 1000
                 log_metric(MetricEvent(
@@ -303,8 +302,7 @@ class PeerClient:
             write_result = self.cache.put(meta, data)
             self._log_cache_write_metrics(object_id, write_result)
             if write_result.stored:
-                await self._announce_dht(object_id)
-                await self.publish(meta)
+                self._schedule_post_store_updates(meta)
 
             latency = (time.perf_counter() - start_time) * 1000
             log_metric(MetricEvent(
@@ -412,12 +410,27 @@ class PeerClient:
     async def _announce_dht(self, object_id: str) -> None:
         """Announce cached object to DHT so the fallback index stays current."""
         peer_url = f"http://{self.host}:{self.port}"
-        await self.dht_node.announce(
+        announced = await self.dht_node.announce_with_retry(
             object_id=object_id,
             peer_id=self.peer_id,
             peer_url=peer_url,
             location_id=self.location_id,
         )
+        if not announced:
+            log_event(
+                self.logger,
+                logging.WARNING,
+                "dht_announce_failed_after_retries",
+                peer_id=self.peer_id,
+                object_id=object_id,
+            )
+
+    def _schedule_post_store_updates(self, metadata: ObjectMetadata) -> None:
+        asyncio.create_task(self._post_store_updates(metadata))
+
+    async def _post_store_updates(self, metadata: ObjectMetadata) -> None:
+        await self._announce_dht(metadata.object_id)
+        await self.publish(metadata)
 
     async def publish(self, metadata: ObjectMetadata):
         req = PublishRequest(peer_id=self.peer_id, metadata=metadata)

@@ -140,6 +140,51 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Coordinator Failure Fallback Smoke Test",
+      "description": "Warm an object through the coordinator path, stop the coordinator, then verify DHT fallback for warm and cold requests.",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "fallback-smoke-1" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "kill", "service": "coordinator" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "fallback-smoke-1" },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "fallback-new-object-1" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "restart", "service": "coordinator", "wait_after_seconds": 4 },
+        { "action": "wait", "seconds": 11 }
+      ]
+    },
+    {
+      "name": "Coordinator Partition Fallback Test",
+      "description": "Disconnect the coordinator from the Docker network to force DHT fallback under network partition rather than clean crash.",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "partition-fallback-1" },
+        { "action": "wait", "seconds": 4 },
+        { "action": "disconnect", "service": "coordinator" },
+        { "action": "wait", "seconds": 2 },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "partition-fallback-1" },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "partition-new-object-1" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "connect", "service": "coordinator", "wait_after_seconds": 2 },
+        { "action": "wait", "seconds": 11 }
+      ]
+    },
+    {
+      "name": "Coordinator Timeout Fallback Test",
+      "description": "Inject high network delay on the coordinator so coordinator lookups exceed the timeout budget and fall back to DHT.",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "timeout-fallback-1" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "delay", "service": "coordinator", "delay_ms": 1200 },
+        { "action": "wait", "seconds": 1 },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "timeout-fallback-1" },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "timeout-new-object-1" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "clear_delay", "service": "coordinator" },
+        { "action": "wait", "seconds": 2 }
+      ]
     }
   ]
 }

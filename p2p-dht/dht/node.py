@@ -20,6 +20,8 @@ from kademlia.network import Server
 
 from common.logging import get_logger
 
+ANNOUNCE_OPERATION_TIMEOUT_SECONDS = 1.0
+
 
 class DHTNode:
     def __init__(self, port: int, ksize: int = 5, alpha: int = 3, logger: Optional[logging.Logger] = None):
@@ -58,7 +60,10 @@ class DHTNode:
         Returns True on success, False if the DHT operation timed out or failed.
         """
         try:
-            raw = await asyncio.wait_for(self.server.get(object_id), timeout=5.0)
+            raw = await asyncio.wait_for(
+                self.server.get(object_id),
+                timeout=ANNOUNCE_OPERATION_TIMEOUT_SECONDS,
+            )
             providers: List[Dict] = []
             if raw:
                 try:
@@ -74,7 +79,7 @@ class DHTNode:
 
             await asyncio.wait_for(
                 self.server.set(object_id, json.dumps(providers)),
-                timeout=5.0,
+                timeout=ANNOUNCE_OPERATION_TIMEOUT_SECONDS,
             )
             return True
         except asyncio.TimeoutError:
@@ -87,6 +92,27 @@ class DHTNode:
                 json.dumps({"event": "dht_announce_error", "object_id": object_id, "error": str(exc)})
             )
             return False
+
+    async def announce_with_retry(
+        self,
+        object_id: str,
+        peer_id: str,
+        peer_url: str,
+        location_id: str,
+        attempts: int = 3,
+        retry_delay_seconds: float = 0.2,
+    ) -> bool:
+        """
+        Retry announcement a small number of times to reduce sensitivity to
+        short-lived DHT convergence delays during experiments.
+        """
+        for attempt in range(1, attempts + 1):
+            ok = await self.announce(object_id, peer_id, peer_url, location_id)
+            if ok:
+                return True
+            if attempt < attempts:
+                await asyncio.sleep(retry_delay_seconds)
+        return False
 
     async def lookup(self, object_id: str) -> List[Dict]:
         """
@@ -117,7 +143,10 @@ class DHTNode:
         """
         for object_id in object_ids:
             try:
-                raw = await asyncio.wait_for(self.server.get(object_id), timeout=5.0)
+                raw = await asyncio.wait_for(
+                    self.server.get(object_id),
+                    timeout=ANNOUNCE_OPERATION_TIMEOUT_SECONDS,
+                )
                 if not raw:
                     continue
                 providers = json.loads(raw)
@@ -127,7 +156,7 @@ class DHTNode:
                 if len(updated) != len(providers):
                     await asyncio.wait_for(
                         self.server.set(object_id, json.dumps(updated)),
-                        timeout=5.0,
+                        timeout=ANNOUNCE_OPERATION_TIMEOUT_SECONDS,
                     )
             except Exception:
                 pass

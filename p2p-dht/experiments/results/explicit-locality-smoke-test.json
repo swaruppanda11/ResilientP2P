@@ -1,13 +1,8 @@
 {
   "scenario": "Explicit Locality Smoke Test",
-  "description": "Simple deterministic run for sanity checking coordinator lookup and peer transfer.",
-  "topology": {
-    "intra_location_delay_ms": 5,
-    "inter_location_delay_ms": 35,
-    "origin_delay_ms": 120
-  },
+  "description": "Sanity check: peer-a1 fetches from origin, peer-a2 should find it via DHT (same building), peer-b1 via DHT (cross-building).",
   "requested_duration_seconds": null,
-  "actual_duration_seconds": 35.145251699956134,
+  "actual_duration_seconds": 2.088340300018899,
   "event_count": 3,
   "events": [
     {
@@ -15,13 +10,13 @@
       "peer": "peer-a1",
       "object_id": "lecture-1-video",
       "scheduled_at_seconds": 0.0,
-      "actual_started_seconds": 0.4038564999355003,
-      "runner_latency_ms": 11542.567600030452,
+      "actual_started_seconds": 0.23264740000013262,
+      "runner_latency_ms": 165.52219993900508,
       "status": "success",
       "source": "origin",
       "provider": "http://origin:8001",
       "candidate_count": 0,
-      "service_latency_ms": 11664.031271999875,
+      "service_latency_ms": 156.7955310000002,
       "size": 1048576
     },
     {
@@ -29,13 +24,13 @@
       "peer": "peer-a2",
       "object_id": "lecture-1-video",
       "scheduled_at_seconds": 1.0,
-      "actual_started_seconds": 11.946468799957074,
-      "runner_latency_ms": 11575.619000010192,
+      "actual_started_seconds": 1.012738800025545,
+      "runner_latency_ms": 50.539799965918064,
       "status": "success",
-      "source": "origin",
-      "provider": "http://origin:8001",
-      "candidate_count": 0,
-      "service_latency_ms": 11592.432142999996,
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 40.561098999972955,
       "size": 1048576
     },
     {
@@ -43,13 +38,13 @@
       "peer": "peer-b1",
       "object_id": "lecture-1-video",
       "scheduled_at_seconds": 2.0,
-      "actual_started_seconds": 23.52211289992556,
-      "runner_latency_ms": 11623.117599985562,
+      "actual_started_seconds": 2.0071954999584705,
+      "runner_latency_ms": 81.09049999620765,
       "status": "success",
-      "source": "origin",
-      "provider": "http://origin:8001",
-      "candidate_count": 0,
-      "service_latency_ms": 11654.886302000023,
+      "source": "peer",
+      "provider": "http://peer-a1:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 67.44823699997937,
       "size": 1048576
     }
   ],
@@ -60,44 +55,46 @@
     "failed_fetch_count": 0,
     "success_rate": 1.0,
     "source_counts": {
-      "origin": 3
+      "origin": 1,
+      "peer": 2
     },
     "bytes_by_source": {
-      "origin": 3145728
+      "origin": 1048576,
+      "peer": 2097152
     },
     "service_latency_ms": {
-      "min": 11592.432142999996,
-      "mean": 11637.116572333298,
-      "median": 11654.886302000023,
-      "p95": 11663.11677499989,
-      "max": 11664.031271999875
+      "min": 40.561098999972955,
+      "mean": 88.26828899998418,
+      "median": 67.44823699997937,
+      "p95": 147.86080159999813,
+      "max": 156.7955310000002
     },
     "runner_latency_ms": {
-      "min": 11542.567600030452,
-      "mean": 11580.434733342068,
-      "median": 11575.619000010192,
-      "p95": 11618.367739988025,
-      "max": 11623.117599985562
+      "min": 50.539799965918064,
+      "mean": 99.05083330037694,
+      "median": 81.09049999620765,
+      "p95": 157.07902994472533,
+      "max": 165.52219993900508
     },
-    "average_candidate_count": 0
+    "average_candidate_count": 0.6666666666666666
   },
   "peer_stats": {
     "peer-a1": {
       "status": "ok",
-      "service": "peer:peer-a1",
+      "service": "dht-peer:peer-a1",
       "peer_id": "peer-a1",
       "location_id": "Building-A",
       "cache_capacity_bytes": 10485760,
       "cache_size_bytes": 1048576,
       "cache_object_count": 1,
-      "cache_hit_count": 0,
+      "cache_hit_count": 2,
       "cache_miss_count": 1,
       "cache_eviction_count": 0,
       "cache_rejected_write_count": 0
     },
     "peer-a2": {
       "status": "ok",
-      "service": "peer:peer-a2",
+      "service": "dht-peer:peer-a2",
       "peer_id": "peer-a2",
       "location_id": "Building-A",
       "cache_capacity_bytes": 10485760,
@@ -110,12 +107,12 @@
     },
     "peer-b1": {
       "status": "ok",
-      "service": "peer:peer-b1",
+      "service": "dht-peer:peer-b1",
       "peer_id": "peer-b1",
       "location_id": "Building-B",
       "cache_capacity_bytes": 10485760,
-      "cache_size_bytes": 1048576,
-      "cache_object_count": 1,
+      "cache_size_bytes": 0,
+      "cache_object_count": 0,
       "cache_hit_count": 0,
       "cache_miss_count": 1,
       "cache_eviction_count": 0,
@@ -125,15 +122,34 @@
   "coordinator_stats": {
     "status": "ok",
     "service": "coordinator",
-    "peer_count": 0,
-    "object_count": 0,
-    "provider_entries": 0,
+    "peer_count": 3,
+    "object_count": 1,
+    "provider_entries": 2,
     "max_providers_per_lookup": 3,
     "peer_timeout_seconds": 30,
     "provider_selection_policy": "locality_then_load",
-    "total_upload_requests": 0,
-    "total_upload_bytes": 0,
-    "peer_loads": []
+    "total_upload_requests": 2,
+    "total_upload_bytes": 2097152,
+    "peer_loads": [
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      },
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 2,
+        "total_upload_bytes": 2097152,
+        "last_transfer_at": "2026-04-02T18:33:58.681342"
+      },
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      }
+    ]
   },
   "generated_from": {
     "request_profiles": [],
