@@ -1,59 +1,246 @@
 # GKE Deployment Guide for ResilientP2P
 
-## Architecture
+This document defines the corrected cloud MVP deployment path for the ResilientP2P project on Google Kubernetes Engine (GKE).
 
-```
-us-east1 (Cloud Run)          us-central1-a (Building-A)         us-central1-b (Building-B)
-+--------------+              +--------------------------+       +------------------+
-|  origin      |<--- WAN ----|  coordinator             |       |                  |
-|  (Cloud Run) |  (20-60ms)  |  dht-bootstrap           |       |  peer-b1         |
-+--------------+              |  peer-a1                 |       |                  |
-                              |  peer-a2                 |       +------------------+
-                              +----------+---------------+              ^
-                                         |      cross-zone (~5-10ms)   |
-                                         +-----------------------------+
-```
+It is intentionally focused on:
 
-- **Real latency** replaces simulated delays (all `DELAY_MS` env vars set to `0`)
-- **Origin on Cloud Run** in a different region for real WAN latency
-- **Peers pinned to zones** via node labels + nodeSelector
+- getting the existing local prototype running correctly in GCP
+- preserving the behavior already validated locally
+- validating both hybrid architectures in cloud
+- preparing the system for repeated runs and final evaluation
+
+This document is a **manual bring-up and validation guide**, not the final Terraform-only automation layer. Terraform and repeatable cloud experiment orchestration should be added on top of this flow after the MVP is confirmed.
 
 ---
 
-## Prerequisites
+## 1. What This Deployment Is Trying to Achieve
 
-- Google Cloud account with billing enabled
-- Tools installed: `gcloud`, `kubectl`, `docker`
-- A GCP project ID (referred to as `$GCP_PROJECT_ID` below)
+The goal of the cloud deployment is **not** to redesign the system. The goal is to reproduce the already-working local prototype in a private GKE environment and validate that:
+
+1. `Coordinator-primary + DHT fallback` works in cloud
+2. `DHT-primary + Coordinator fallback` works in cloud
+3. locality-aware peer selection still behaves correctly
+4. churn and fallback paths can be exercised in cloud
+5. the system is ready for repeated runs and final results collection
+
+The most important rule is:
+
+> The cloud environment should preserve the validated local behavior before adding realism or scale.
+
+---
+
+## 2. Correct Cloud MVP Design
+
+### 2.1 Use GKE Only
+
+The cloud MVP uses:
+
+- `GKE` for peers, coordinator, DHT bootstrap, and workload execution
+- `Artifact Registry` for Docker images
+- `GCS` for experiment artifacts
+
+We do **not** use Cloud Run for peer services.
+
+### 2.2 Controlled Latency Model
+
+For this research project, the primary latency hierarchy should remain the **application-layer model already implemented in the codebase**:
+
+- same-building peer fetch
+- cross-building peer fetch
+- origin fetch
+
+This is more experimentally stable than depending entirely on raw GCP network latency.
+
+Therefore:
+
+- keep the existing app-layer delay model enabled in cloud
+- treat real cloud latency as an additional background effect, not the primary topology mechanism
+
+This preserves comparability between local and cloud runs.
+
+### 2.3 Logical Buildings, Not Real Campus Subnets
+
+For the MVP, buildings are modeled logically via:
+
+- `LOCATION_ID`
+- pod labels
+- node placement
+
+We do **not** require one real GCP subnet per building in the first cloud pass.
+
+Instead:
+
+- use a single private GKE cluster
+- optionally place peers on different zones/node pools
+- keep the experiment’s building identity in configuration
+
+### 2.4 Deploy One Architecture at a Time
+
+The two stacks should not be run simultaneously unless they are fully namespaced and isolated.
+
+Recommended workflow:
+
+1. deploy and validate `coordinator-primary`
+2. tear it down or isolate it
+3. deploy and validate `DHT-primary`
+
+---
+
+## 3. Target Cloud Architecture
+
+Recommended cloud MVP:
+
+```text
+GCP Project
+  ├── VPC
+  ├── Private GKE Cluster
+  │    ├── coordinator namespace
+  │    ├── dht namespace
+  │    └── infra namespace
+  ├── Artifact Registry
+  └── GCS bucket for results
+```
+
+Core services:
+
+- `origin`
+- `coordinator`
+- `dht-bootstrap`
+- `peer-a1`, `peer-a2`, `peer-b1` initially
+- later: workload runner Job
+
+Recommended deployment model:
+
+- `Deployment` for:
+  - origin
+  - coordinator
+  - dht-bootstrap
+- `StatefulSet` for peers
+- `Job` for workload execution
+
+---
+
+## 4. Prerequisites
+
+Required locally:
+
+- `gcloud`
+- `kubectl`
+- `docker`
+
+Required in GCP:
+
+- billing enabled
+- GKE API enabled
+- Artifact Registry API enabled
+- GCS access
+
+Set project:
 
 ```bash
 export GCP_PROJECT_ID="your-project-id"
 gcloud config set project $GCP_PROJECT_ID
 ```
 
----
-
-## Step 1: Enable APIs
+Enable APIs:
 
 ```bash
 gcloud services enable \
   container.googleapis.com \
   artifactregistry.googleapis.com \
-  run.googleapis.com
+  storage.googleapis.com
 ```
 
 ---
 
-## Step 2: Create GKE Cluster
+## 5. Build and Push Images
+
+### 5.1 Required Images
+
+Build and push:
+
+- `coordinator`
+- `coord-peer`
+- `origin`
+- `dht-bootstrap`
+- `dht-peer`
+
+### 5.2 Tagging Rule
+
+Do not use only `v1`.
+
+Use:
+
+- git SHA tags for reproducibility
+- optional convenience tag if needed
+
+Example:
 
 ```bash
-# Create regional cluster with no default node pool
+export GIT_SHA=$(git rev-parse --short HEAD)
+export REGISTRY="us-central1-docker.pkg.dev/$GCP_PROJECT_ID/resilientp2p"
+```
+
+Build:
+
+```bash
+cd p2p-coordinator
+docker build -f coordinator/Dockerfile -t $REGISTRY/coordinator:$GIT_SHA .
+docker build -f peer/Dockerfile -t $REGISTRY/coord-peer:$GIT_SHA .
+docker build -f origin/Dockerfile -t $REGISTRY/origin:$GIT_SHA .
+docker build -f bootstrap/Dockerfile -t $REGISTRY/dht-bootstrap:$GIT_SHA .
+
+cd ../p2p-dht
+docker build -f peer/Dockerfile -t $REGISTRY/dht-peer:$GIT_SHA .
+```
+
+Push:
+
+```bash
+docker push $REGISTRY/coordinator:$GIT_SHA
+docker push $REGISTRY/coord-peer:$GIT_SHA
+docker push $REGISTRY/origin:$GIT_SHA
+docker push $REGISTRY/dht-bootstrap:$GIT_SHA
+docker push $REGISTRY/dht-peer:$GIT_SHA
+```
+
+---
+
+## 6. GKE Cluster Setup
+
+### 6.1 Recommended MVP Cluster
+
+Use one private GKE cluster in `us-central1`.
+
+You may use multiple node pools to emulate placement separation, but do not overcomplicate the first deployment.
+
+Suggested starting point:
+
+- cluster: `resilientp2p-cluster`
+- region: `us-central1`
+- node pools:
+  - `building-a-pool`
+  - `building-b-pool`
+
+Example:
+
+```bash
+gcloud container clusters create-auto resilientp2p-cluster \
+  --region us-central1
+```
+
+Or, if you want manual node pools:
+
+```bash
 gcloud container clusters create resilientp2p-cluster \
   --region us-central1 \
-  --num-nodes 0 \
-  --release-channel rapid
+  --num-nodes 1 \
+  --machine-type e2-standard-2
+```
 
-# Building-A node pool in us-central1-a
+Optional node pools for placement:
+
+```bash
 gcloud container node-pools create building-a-pool \
   --cluster resilientp2p-cluster \
   --region us-central1 \
@@ -62,7 +249,6 @@ gcloud container node-pools create building-a-pool \
   --num-nodes 1 \
   --node-labels building=A
 
-# Building-B node pool in us-central1-b
 gcloud container node-pools create building-b-pool \
   --cluster resilientp2p-cluster \
   --region us-central1 \
@@ -70,166 +256,151 @@ gcloud container node-pools create building-b-pool \
   --machine-type e2-medium \
   --num-nodes 1 \
   --node-labels building=B
+```
 
-# Get credentials for kubectl
+Fetch credentials:
+
+```bash
 gcloud container clusters get-credentials resilientp2p-cluster --region us-central1
 ```
 
+### 6.2 Important Note
+
+Zone placement is only a **secondary realism aid**. It does not replace the application-layer locality model.
+
 ---
 
-## Step 3: Create Artifact Registry
+## 7. Artifact Registry
+
+Create repository:
 
 ```bash
 gcloud artifacts repositories create resilientp2p \
   --repository-format=docker \
   --location=us-central1
+```
 
-# Authenticate docker
+Authenticate docker:
+
+```bash
 gcloud auth configure-docker us-central1-docker.pkg.dev
-
-export REGISTRY="us-central1-docker.pkg.dev/$GCP_PROJECT_ID/resilientp2p"
 ```
 
 ---
 
-## Step 4: Build & Push Docker Images
+## 8. Origin Service Strategy
 
-5 images total. Build from the project root.
+### 8.1 Recommended MVP Choice
 
-```bash
-cd /path/to/ResilientP2P
+For the first cloud pass, prefer **an internal origin service in GKE** using the same origin image.
 
-# From p2p-coordinator/ context (coordinator, coord-peer, origin, dht-bootstrap)
-cd p2p-coordinator
-docker build -f coordinator/Dockerfile -t $REGISTRY/coordinator:v1 .
-docker build -f peer/Dockerfile -t $REGISTRY/coord-peer:v1 .
-docker build -f origin/Dockerfile -t $REGISTRY/origin:v1 .
-docker build -f bootstrap/Dockerfile -t $REGISTRY/dht-bootstrap:v1 .
+Reason:
 
-# From p2p-dht/ context (dht-peer)
-cd ../p2p-dht
-docker build -f peer/Dockerfile -t $REGISTRY/dht-peer:v1 .
+- simpler
+- more controllable
+- fully private
+- easier to keep reproducible
 
-# Push all
-cd ..
-docker push $REGISTRY/coordinator:v1
-docker push $REGISTRY/coord-peer:v1
-docker push $REGISTRY/origin:v1
-docker push $REGISTRY/dht-bootstrap:v1
-docker push $REGISTRY/dht-peer:v1
-```
+### 8.2 If You Still Want External Origin
+
+An external origin is acceptable as a second step. If used:
+
+- place it in another region
+- clearly record that this adds uncontrolled cloud-network variance
+
+If you keep Cloud Run for the origin, treat it as a realism layer, not as the primary basis of your topology model.
 
 ---
 
-## Step 5: Deploy Origin to Cloud Run
+## 9. Kubernetes Deployment Model
 
-Origin runs in `us-east1` (different region) for real WAN latency.
+### 9.1 Namespaces
 
-```bash
-gcloud run deploy resilientp2p-origin \
-  --image $REGISTRY/origin:v1 \
-  --region us-east1 \
-  --platform managed \
-  --allow-unauthenticated \
-  --port 8001 \
-  --set-env-vars ORIGIN_DELAY_MS=0 \
-  --memory 512Mi \
-  --cpu 1 \
-  --min-instances 1 \
-  --max-instances 2
+Recommended namespaces:
 
-# Get the Cloud Run URL
-ORIGIN_URL=$(gcloud run services describe resilientp2p-origin \
-  --region us-east1 --format 'value(status.url)')
-echo "Origin URL: $ORIGIN_URL"
-```
+- `p2p-coordinator`
+- `p2p-dht`
+- `p2p-infra`
 
-Verify it works:
+### 9.2 Services
 
-```bash
-curl -s "$ORIGIN_URL/health"
-# Expected: {"status":"ok","service":"origin"}
-```
+Deploy the following as internal cluster services:
 
----
+- `coordinator`
+- `origin`
+- `dht-bootstrap`
+- one service per peer or headless service for peer StatefulSet access
 
-## Step 6: Update K8s Manifests
+### 9.3 Peers
 
-Before applying, replace the placeholders in the manifest files:
+Use `StatefulSet` for peers if you want stable peer IDs and DNS names.
 
-### 6a. Update image references
+Each peer must receive:
 
-In **all** YAML files under `k8s/coordinator-stack/` and `k8s/dht-stack/`, replace:
+- `PEER_ID`
+- `LOCATION_ID`
+- `COORDINATOR_URL`
+- `ORIGIN_URL`
+- `DHT_BOOTSTRAP_HOST`
+- `DHT_BOOTSTRAP_PORT`
+- `CACHE_CAPACITY_BYTES`
+- topology delay variables
 
-```
-image: REGISTRY/coordinator:v1    ->  image: us-central1-docker.pkg.dev/YOUR_PROJECT/resilientp2p/coordinator:v1
-image: REGISTRY/coord-peer:v1     ->  image: us-central1-docker.pkg.dev/YOUR_PROJECT/resilientp2p/coord-peer:v1
-image: REGISTRY/dht-peer:v1       ->  image: us-central1-docker.pkg.dev/YOUR_PROJECT/resilientp2p/dht-peer:v1
-image: REGISTRY/dht-bootstrap:v1  ->  image: us-central1-docker.pkg.dev/YOUR_PROJECT/resilientp2p/dht-bootstrap:v1
-```
+### 9.4 Service Discovery Mapping
 
-Or use sed:
+Replace docker-compose hostnames with Kubernetes DNS names.
 
-```bash
-find k8s/ -name '*.yaml' -exec sed -i '' "s|REGISTRY|$REGISTRY|g" {} +
-```
+Examples:
 
-### 6b. Update Origin URL
+- `http://coordinator:8000`
+- `http://origin:8001`
+- `dht-bootstrap`
 
-In `k8s/base/configmap-coordinator.yaml` and `k8s/base/configmap-dht.yaml`, replace:
-
-```
-ORIGIN_URL: "REPLACE_WITH_CLOUD_RUN_URL"  ->  ORIGIN_URL: "https://resilientp2p-origin-XXXX-ue.a.run.app"
-```
-
-Or use sed:
-
-```bash
-sed -i '' "s|REPLACE_WITH_CLOUD_RUN_URL|$ORIGIN_URL|g" k8s/base/configmap-coordinator.yaml k8s/base/configmap-dht.yaml
-```
+should become their correct Kubernetes service names in the appropriate namespace.
 
 ---
 
-## Step 7: Deploy Coordinator Stack (Config B)
+## 10. Keep the Existing Delay Model
+
+Do **not** set all latency variables to zero for the main experiments.
+
+Keep the current controlled values unless you are explicitly running a “raw cloud latency” comparison:
+
+- same-building / intra-location delay
+- cross-building / inter-location delay
+- origin delay
+
+This is necessary to preserve:
+
+- local-vs-cloud comparability
+- experimental control
+- the report’s locality claims
+
+Raw cloud network differences are too noisy and too weakly separated to replace the modeled hierarchy by themselves.
+
+---
+
+## 11. Manual Validation Workflow
+
+This section is for initial bring-up only.
+
+### 11.1 Deploy Coordinator Stack
+
+Apply namespace and config:
 
 ```bash
-# Create namespaces
 kubectl apply -f k8s/base/namespaces.yaml
-
-# Apply config
 kubectl apply -f k8s/base/configmap-coordinator.yaml
-
-# Deploy all services
 kubectl apply -f k8s/coordinator-stack/
+```
 
-# Watch pods come up
+Wait for readiness:
+
+```bash
 kubectl get pods -n p2p-coordinator -w
 ```
 
-Wait until all 5 pods show `Running` and `Ready` (1-2 minutes):
-
-```
-NAME                              READY   STATUS    AGE
-coordinator-xxxxx                 1/1     Running   60s
-dht-bootstrap-xxxxx               1/1     Running   60s
-peer-a1-xxxxx                     1/1     Running   60s
-peer-a2-xxxxx                     1/1     Running   60s
-peer-b1-xxxxx                     1/1     Running   60s
-```
-
-Verify coordinator sees all peers:
-
-```bash
-kubectl port-forward -n p2p-coordinator svc/coordinator 8000:8000 &
-curl -s localhost:8000/stats | python3 -m json.tool
-# Should show peer_count: 3
-```
-
----
-
-## Step 8: Test Coordinator Stack
-
-### Set up port-forwards (each in a separate terminal, or background them)
+### 11.2 Port-Forward for Manual Validation
 
 ```bash
 kubectl port-forward -n p2p-coordinator svc/coordinator 8000:8000 &
@@ -238,73 +409,44 @@ kubectl port-forward -n p2p-coordinator svc/peer-a2 7002:7000 &
 kubectl port-forward -n p2p-coordinator svc/peer-b1 7003:7000 &
 ```
 
-### Test 1: Origin fetch (real WAN latency)
+### 11.3 Minimal Validation Tests
+
+1. Warm object from origin:
 
 ```bash
-curl -s localhost:7001/trigger-fetch/test-object-1 | python3 -m json.tool
+curl -s localhost:7001/trigger-fetch/test-object-1
 ```
 
-Expected: `source: "origin"`, latency ~20-60ms (real WAN to us-east1).
-
-### Test 2: Same-building peer fetch (intra-zone)
+2. Same-building peer fetch:
 
 ```bash
-curl -s localhost:7002/trigger-fetch/test-object-1 | python3 -m json.tool
+curl -s localhost:7002/trigger-fetch/test-object-1
 ```
 
-Expected: `source: "peer"`, provider: peer-a1, latency ~1-5ms.
-
-### Test 3: Cross-building peer fetch (cross-zone)
+3. Cross-building peer fetch:
 
 ```bash
-curl -s localhost:7003/trigger-fetch/test-object-1 | python3 -m json.tool
+curl -s localhost:7003/trigger-fetch/test-object-1
 ```
 
-Expected: `source: "peer"`, latency ~5-15ms (higher than Test 2).
-
-### Test 4: DHT fallback (kill coordinator)
-
-```bash
-kubectl scale deployment coordinator -n p2p-coordinator --replicas=0
-
-# Wait 5 seconds for coordinator to be fully down
-sleep 5
-
-curl -s localhost:7003/trigger-fetch/test-object-1 | python3 -m json.tool
-# Expected: source: "peer" via DHT fallback
-
-# Bring coordinator back
-kubectl scale deployment coordinator -n p2p-coordinator --replicas=1
-```
-
-### Test 5: Full pipeline (new object with coordinator down)
+4. Coordinator crash fallback:
 
 ```bash
 kubectl scale deployment coordinator -n p2p-coordinator --replicas=0
 sleep 5
-
-curl -s localhost:7003/trigger-fetch/brand-new-object | python3 -m json.tool
-# Expected: source: "origin" (no peer has it, DHT has no entry, falls to origin)
-
+curl -s localhost:7003/trigger-fetch/test-object-1
 kubectl scale deployment coordinator -n p2p-coordinator --replicas=1
 ```
 
----
-
-## Step 9: Deploy & Test DHT Stack (Config A)
+### 11.4 Deploy DHT Stack
 
 ```bash
-# Apply DHT config
 kubectl apply -f k8s/base/configmap-dht.yaml
-
-# Deploy all services
 kubectl apply -f k8s/dht-stack/
-
-# Watch pods come up
 kubectl get pods -n p2p-dht -w
 ```
 
-Port-forward (use different local ports if coordinator stack is still running):
+Port-forward:
 
 ```bash
 kubectl port-forward -n p2p-dht svc/coordinator 9000:8000 &
@@ -313,121 +455,101 @@ kubectl port-forward -n p2p-dht svc/peer-a2 9002:7000 &
 kubectl port-forward -n p2p-dht svc/peer-b1 9003:7000 &
 ```
 
-Run the same tests on ports 9001-9003. For coordinator fallback test, kill dht-bootstrap instead:
+Test DHT crash fallback:
 
 ```bash
 kubectl scale deployment dht-bootstrap -n p2p-dht --replicas=0
 sleep 5
-curl -s localhost:9003/trigger-fetch/test-object-1 | python3 -m json.tool
-# Expected: source: "peer" via coordinator fallback
+curl -s localhost:9003/trigger-fetch/test-object-1
 kubectl scale deployment dht-bootstrap -n p2p-dht --replicas=1
 ```
 
 ---
 
-## Collecting Metrics
+## 12. What This Guide Does Not Yet Cover
 
-### From container logs
+This guide intentionally stops short of the full final cloud workflow.
 
-```bash
-# Extract METRIC lines from all peers
-for pod in peer-a1 peer-a2 peer-b1; do
-  kubectl logs -n p2p-coordinator deployment/$pod | grep "^METRIC:" > metrics-coord-$pod.jsonl
-done
+It does **not** yet define:
 
-for pod in peer-a1 peer-a2 peer-b1; do
-  kubectl logs -n p2p-dht deployment/$pod | grep "^METRIC:" > metrics-dht-$pod.jsonl
-done
-```
+- Terraform modules
+- automated result export to GCS
+- in-cluster workload runner Jobs
+- repeated-run orchestration
+- full Prometheus/Grafana deployment
+- advanced partition injection in Kubernetes
+- coordinator HA / Redis
 
-### From coordinator stats
-
-```bash
-curl -s localhost:8000/stats | python3 -m json.tool  # coordinator stack
-curl -s localhost:9000/stats | python3 -m json.tool  # DHT stack
-```
-
-### From Cloud Logging (GCP Console)
-
-All container stdout is automatically shipped to Cloud Logging. Query with:
-
-```
-resource.type="k8s_container"
-textPayload:"METRIC:"
-```
+Those belong to the next layer after the cloud MVP is validated.
 
 ---
 
-## Latency Comparison: Local vs Cloud
+## 13. Metrics Collection for MVP
 
-| Path | Docker Compose (simulated) | GKE (real) |
-|------|---------------------------|------------|
-| Intra-building (same zone) | 5ms | ~1-5ms |
-| Cross-building (cross zone) | 35ms | ~5-10ms |
-| Origin (WAN) | 120ms | ~20-60ms |
-| DHT fallback | ~115ms | real network latency |
-| Coordinator fallback | ~86ms | real network latency |
+For the cloud MVP, the minimum acceptable metrics sources are:
 
----
+1. application logs
+2. `/stats` endpoints
+3. structured result JSON artifacts once workload Jobs are added
 
-## Scaling (Adding More Peers)
-
-To add `peer-a3` in Building-A:
-1. Copy `k8s/coordinator-stack/peer-a1.yaml`
-2. Replace: `peer-a1` -> `peer-a3` everywhere in the file
-3. `kubectl apply -f k8s/coordinator-stack/peer-a3.yaml`
-
-To add a third building (Building-C):
-1. Create a new node pool:
-   ```bash
-   gcloud container node-pools create building-c-pool \
-     --cluster resilientp2p-cluster --region us-central1 \
-     --node-locations us-central1-c --machine-type e2-medium \
-     --num-nodes 1 --node-labels building=C
-   ```
-2. Create peer YAML with `LOCATION_ID: Building-C` and `nodeSelector: building: C`
-
----
-
-## Teardown (Stop Billing)
+Manual collection examples:
 
 ```bash
-# Delete the GKE cluster (removes all pods, services, node pools)
+kubectl logs -n p2p-coordinator <peer-pod-name>
+kubectl logs -n p2p-dht <peer-pod-name>
+```
+
+For richer evaluation later:
+
+- add a workload runner Job
+- upload result JSON to GCS
+- aggregate offline or via notebooks/scripts
+
+---
+
+## 14. Recommended Next Step After This Guide
+
+After the manual GKE bring-up works, the next work items should be:
+
+1. add Terraform for:
+   - GKE
+   - Artifact Registry
+   - GCS
+2. create a workload runner Job
+3. export result artifacts automatically
+4. add repeated-run support
+5. only then produce final plots/tables
+
+---
+
+## 15. Teardown
+
+Delete cluster when done:
+
+```bash
 gcloud container clusters delete resilientp2p-cluster --region us-central1 --quiet
+```
 
-# Delete Cloud Run origin
-gcloud run services delete resilientp2p-origin --region us-east1 --quiet
+Delete Artifact Registry repository if needed:
 
-# (Optional) Delete Artifact Registry images
+```bash
 gcloud artifacts repositories delete resilientp2p --location=us-central1 --quiet
 ```
 
-Estimated cost while running: ~$65/month (2 nodes + Cloud Run). Tear down after testing to avoid charges.
+If using Cloud Run origin, delete it separately:
+
+```bash
+gcloud run services delete resilientp2p-origin --region us-east1 --quiet
+```
 
 ---
 
-## Troubleshooting
+## 16. Key Design Corrections from the Earlier Version
 
-### Pods stuck in Pending
-```bash
-kubectl describe pod <pod-name> -n p2p-coordinator
-```
-Usually means node pool doesn't have capacity. Check node labels match `nodeSelector`.
+This corrected guide differs from the earlier version in these important ways:
 
-### Peer can't reach coordinator
-```bash
-kubectl exec -n p2p-coordinator deployment/peer-a1 -- curl -s http://coordinator.p2p-coordinator.svc.cluster.local:8000/health
-```
-Should return `{"status":"ok"}`. If not, check Service and DNS.
-
-### DHT UDP not working
-```bash
-kubectl exec -n p2p-coordinator deployment/peer-a1 -- python3 -c "import socket; s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.sendto(b'test', ('dht-bootstrap.p2p-coordinator.svc.cluster.local', 6000)); print('UDP ok')"
-```
-GKE default network policy allows all intra-cluster traffic including UDP.
-
-### Cloud Run origin returning 502
-Check Cloud Run logs in GCP Console. Likely a cold start issue — verify `min-instances=1` is set.
-
-### Port-forward keeps dropping
-Use `while true; do kubectl port-forward ...; sleep 1; done` to auto-reconnect. For production testing, use the in-cluster experiment runner Job instead.
+1. It uses `GKE` as the primary platform and no longer treats Cloud Run as part of the core peer architecture.
+2. It keeps the `application-layer delay model` for controlled evaluation.
+3. It treats `zone placement` as a realism aid, not as the full topology model.
+4. It treats this document as a `manual MVP bring-up guide`, not the full final experiment framework.
+5. It explicitly defers Terraform, workload Jobs, and repeated-run automation to the next phase instead of pretending they are already solved here.
