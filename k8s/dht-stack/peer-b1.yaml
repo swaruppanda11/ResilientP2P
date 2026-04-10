@@ -12,10 +12,10 @@ spec:
     metadata:
       labels:
         app: peer-b1
-        building: B
+        building: b
     spec:
       nodeSelector:
-        building: B
+        building: b
       containers:
       - name: peer
         image: REGISTRY/dht-peer:v1

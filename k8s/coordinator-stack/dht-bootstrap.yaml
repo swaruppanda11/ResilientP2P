@@ -14,7 +14,7 @@ spec:
         app: dht-bootstrap
     spec:
       nodeSelector:
-        building: A
+        building: a
       containers:
       - name: dht-bootstrap
         image: REGISTRY/dht-bootstrap:v1

@@ -45,39 +45,57 @@ These tasks must be completed first because they unblock both stacks.
 
 ### Swarup
 
-- [ ] Create or verify GCP project setup
-- [ ] Enable required APIs:
-  - [ ] `container.googleapis.com`
-  - [ ] `artifactregistry.googleapis.com`
-  - [ ] `storage.googleapis.com`
-- [ ] Create Artifact Registry repository
-- [ ] Create initial GKE cluster
-- [ ] Optionally create two node pools for placement:
-  - [ ] `building-a-pool`
-  - [ ] `building-b-pool`
-- [ ] Share with Tanish:
-  - [ ] cluster name
-  - [ ] region
-  - [ ] kube credentials workflow
-  - [ ] Artifact Registry path
+- [x] Create or verify GCP project setup
+- [x] Enable required APIs:
+  - [x] `container.googleapis.com`
+  - [x] `artifactregistry.googleapis.com`
+  - [x] `storage.googleapis.com`
+- [x] Create Artifact Registry repository
+- [x] Create initial GKE cluster
+- [x] Optionally create two node pools for placement:
+  - [x] `building-a-pool`
+  - [x] `building-b-pool`
+- [x] Share with Tanish:
+  - [x] cluster name
+  - [x] region
+  - [x] kube credentials workflow
+  - [x] Artifact Registry path
 
 ### Tanish
 
-- [ ] Review and validate the base cloud config assumptions:
-  - [ ] internal-only services
-  - [ ] app-layer latency model remains enabled
-  - [ ] peer identity/env var mapping
-- [ ] Confirm which current experiment settings must remain unchanged in cloud:
-  - [ ] cache capacity
-  - [ ] topology delay values
-  - [ ] peer IDs
-  - [ ] scenario names
-  - [ ] seeds
+- [x] Review and validate the base cloud config assumptions:
+  - [x] internal-only services
+  - [x] app-layer latency model remains enabled
+  - [x] peer identity/env var mapping
+- [x] Confirm which current experiment settings must remain unchanged in cloud:
+  - [x] cache capacity
+  - [x] topology delay values
+  - [x] peer IDs
+  - [x] scenario names
+  - [x] seeds
 
 ### Shared Exit Condition
 
-- [ ] Both teammates can access the GKE cluster
-- [ ] Both teammates can push/pull images from Artifact Registry
+- [x] Both teammates can access the GKE cluster
+- [x] Both teammates can push/pull images from Artifact Registry
+
+### Phase 1 Frozen Outputs
+
+- GCP project: `resilientp2p-492916`
+- Cluster: `resilientp2p-gke`
+- Zone: `us-central1-f`
+- Artifact Registry repo: `us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p`
+- Kube credentials workflow:
+  - `gcloud container clusters get-credentials resilientp2p-gke --zone us-central1-f --project resilientp2p-492916`
+- Cloud config assumptions frozen for later phases:
+  - internal-only Kubernetes Services
+  - app-layer delays remain enabled in cloud
+  - topology delays stay `5/35/120 ms`
+  - cache capacity stays `10485760` bytes
+  - peer IDs stay `peer-a1`, `peer-a2`, `peer-b1`
+  - scenario names and seed stay unchanged from local experiment configs
+  - internal origin DNS is used in-cluster instead of a Cloud Run placeholder
+  - node placement labels use lowercase `building=a` and `building=b`
 
 ---
 

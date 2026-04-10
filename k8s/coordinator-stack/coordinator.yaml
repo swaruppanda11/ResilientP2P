@@ -14,7 +14,7 @@ spec:
         app: coordinator
     spec:
       nodeSelector:
-        building: A
+        building: a
       containers:
       - name: coordinator
         image: REGISTRY/coordinator:v1

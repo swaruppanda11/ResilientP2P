@@ -4,11 +4,11 @@ metadata:
   name: p2p-common-config
   namespace: p2p-dht
 data:
-  INTRA_LOCATION_DELAY_MS: "0"
-  INTER_LOCATION_DELAY_MS: "0"
-  ORIGIN_DELAY_MS: "0"
+  INTRA_LOCATION_DELAY_MS: "5"
+  INTER_LOCATION_DELAY_MS: "35"
+  ORIGIN_DELAY_MS: "120"
   COORDINATOR_URL: "http://coordinator.p2p-dht.svc.cluster.local:8000"
-  ORIGIN_URL: "REPLACE_WITH_CLOUD_RUN_URL"
+  ORIGIN_URL: "http://origin.p2p-dht.svc.cluster.local:8001"
   DHT_BOOTSTRAP_HOST: "dht-bootstrap.p2p-dht.svc.cluster.local"
   DHT_BOOTSTRAP_PORT: "6000"
   DHT_PORT: "6000"

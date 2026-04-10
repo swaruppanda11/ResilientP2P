@@ -12,10 +12,10 @@ spec:
     metadata:
       labels:
         app: peer-a2
-        building: A
+        building: a
     spec:
       nodeSelector:
-        building: A
+        building: a
       containers:
       - name: peer
         image: REGISTRY/coord-peer:v1
