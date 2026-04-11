@@ -18,7 +18,7 @@ spec:
         building: b
       containers:
       - name: peer
-        image: REGISTRY/coord-peer:v1
+        image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/coord-peer:v1
         ports:
         - containerPort: 7000
           protocol: TCP

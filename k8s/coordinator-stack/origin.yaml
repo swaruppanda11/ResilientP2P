@@ -1,53 +1,53 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: coordinator
+  name: origin
   namespace: p2p-coordinator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: coordinator
+      app: origin
   template:
     metadata:
       labels:
-        app: coordinator
+        app: origin
     spec:
       nodeSelector:
         building: a
       containers:
-      - name: coordinator
-        image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/coordinator:v1
+      - name: origin
+        image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/origin:v1
         ports:
-        - containerPort: 8000
-        envFrom:
-        - configMapRef:
-            name: p2p-common-config
-        securityContext:
-          capabilities:
-            add: ["NET_ADMIN"]
+        - containerPort: 8001
+        env:
+        - name: ORIGIN_DELAY_MS
+          valueFrom:
+            configMapKeyRef:
+              name: p2p-common-config
+              key: ORIGIN_DELAY_MS
         readinessProbe:
           httpGet:
             path: /health
-            port: 8000
+            port: 8001
           initialDelaySeconds: 5
           periodSeconds: 5
         livenessProbe:
           httpGet:
             path: /health
-            port: 8000
+            port: 8001
           initialDelaySeconds: 10
           periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: coordinator
+  name: origin
   namespace: p2p-coordinator
 spec:
   selector:
-    app: coordinator
+    app: origin
   ports:
-  - port: 8000
-    targetPort: 8000
+  - port: 8001
+    targetPort: 8001
     protocol: TCP

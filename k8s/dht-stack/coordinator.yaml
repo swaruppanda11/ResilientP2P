@@ -17,7 +17,7 @@ spec:
         building: a
       containers:
       - name: coordinator
-        image: REGISTRY/coordinator:v1
+        image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/coordinator:v1
         ports:
         - containerPort: 8000
         envFrom:

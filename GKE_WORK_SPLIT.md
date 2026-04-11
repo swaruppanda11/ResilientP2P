@@ -103,27 +103,34 @@ These tasks must be completed first because they unblock both stacks.
 
 These tasks can happen in parallel after the registry exists.
 
-### Swarup
+### Swarup (drove all 5 via scripts/build-and-push.sh)
 
-- [ ] Build and push DHT-side images:
-  - [ ] `dht-peer`
-  - [ ] `dht-bootstrap`
-- [ ] Use git SHA tags, not only static tags
-- [ ] Document the pushed image URIs
+- [x] Build and push DHT-side images:
+  - [x] `dht-peer`
+  - [x] `dht-bootstrap`
+- [x] Build and push coordinator-side images:
+  - [x] `coordinator`
+  - [x] `coord-peer`
+  - [x] `origin`
+- [x] Use git SHA tags (`bf3db98`) plus `:v1` alias
+- [x] Document the pushed image URIs
 
-### Tanish
+### Pushed Image URIs
 
-- [ ] Build and push coordinator-side images:
-  - [ ] `coordinator`
-  - [ ] `coord-peer`
-  - [ ] `origin`
-- [ ] Use git SHA tags
-- [ ] Document the pushed image URIs
+```
+us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/coordinator:bf3db98
+us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/coord-peer:bf3db98
+us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/origin:bf3db98
+us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/dht-bootstrap:bf3db98
+us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/dht-peer:bf3db98
+```
+
+Each image is also tagged `:v1`, which is what the manifests reference.
 
 ### Shared Exit Condition
 
-- [ ] All required images exist in Artifact Registry
-- [ ] Image tag naming convention is agreed and reproducible
+- [x] All required images exist in Artifact Registry
+- [x] Image tag naming convention is agreed and reproducible (git SHA + `v1`)
 
 ---
 
