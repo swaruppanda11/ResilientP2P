@@ -18,11 +18,13 @@ import asyncio
 import json
 import random
 import statistics
+import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
+from urllib.parse import urlparse
 
 import httpx
 
@@ -48,9 +50,15 @@ class ExperimentRunner:
             self.spec = json.load(handle)
 
         self.peer_map: Dict[str, Dict[str, Any]] = self.spec["peer_map"]
+        self.orchestrator = self.spec.get("orchestrator", "docker-compose")
+        if self.orchestrator not in {"docker-compose", "kubernetes"}:
+            raise ValueError(f"Unsupported orchestrator: {self.orchestrator}")
         self.compose_file = (
             self.spec_path.parent / self.spec.get("compose_file", "../docker-compose.yml")
         ).resolve()
+        self.namespace = self.spec.get("namespace")
+        if self.orchestrator == "kubernetes" and not self.namespace:
+            raise ValueError("Kubernetes runner requires 'namespace' in the workload spec")
         self.results_dir = (
             self.spec_path.parent / self.spec.get("results_dir", "results")
         ).resolve()
@@ -66,6 +74,7 @@ class ExperimentRunner:
         )
         self.service_names = self._get_service_names()
         self.network_name = f"{self.compose_file.parent.name}_p2p_network"
+        self.port_forward_processes: List[subprocess.Popen] = []
 
     def _get_service_names(self) -> List[str]:
         services = ["coordinator", "origin", "dht-bootstrap"]
@@ -74,12 +83,15 @@ class ExperimentRunner:
         return services
 
     async def run(self) -> None:
-        for scenario in self.spec["scenarios"]:
-            result = await self.run_scenario(scenario)
-            result_path = self.results_dir / f"{self._slugify(scenario['name'])}.json"
-            with result_path.open("w", encoding="utf-8") as handle:
-                json.dump(result, handle, indent=2)
-            print(f"[+] Wrote results to {result_path}")
+        try:
+            for scenario in self.spec["scenarios"]:
+                result = await self.run_scenario(scenario)
+                result_path = self.results_dir / f"{self._slugify(scenario['name'])}.json"
+                with result_path.open("w", encoding="utf-8") as handle:
+                    json.dump(result, handle, indent=2)
+                print(f"[+] Wrote results to {result_path}")
+        finally:
+            self._stop_port_forwards()
 
     async def run_scenario(self, scenario: Dict[str, Any]) -> Dict[str, Any]:
         scenario_name = scenario["name"]
@@ -87,8 +99,7 @@ class ExperimentRunner:
 
         if scenario.get("reset_stack_before", self.default_reset_stack):
             print("[.] Resetting stack before scenario...")
-            await self._compose_command(["down"])
-            await self._compose_command(["up", "-d", *self.service_names])
+            await self._reset_stack()
             await asyncio.sleep(
                 float(scenario.get("bootstrap_wait_seconds", self.bootstrap_wait_seconds))
             )
@@ -359,7 +370,7 @@ class ExperimentRunner:
         service_name = event.payload.get("service")
         if service_name:
             print(f"[!] t={actual_started:.2f}s stop service {service_name}")
-            await self._compose_command(["stop", service_name])
+            await self._stop_service(service_name)
             return {
                 "action": "kill",
                 "service": service_name,
@@ -369,12 +380,15 @@ class ExperimentRunner:
             }
 
         peer_id = event.payload["peer"]
-        peer_url = self.peer_map[peer_id]["url"]
         print(f"[!] t={actual_started:.2f}s kill {peer_id}")
-        try:
-            await client.post(f"{peer_url}/suicide")
-        except Exception:
-            pass
+        if self.orchestrator == "kubernetes":
+            await self._stop_service(self.peer_map[peer_id].get("service", peer_id))
+        else:
+            peer_url = self.peer_map[peer_id]["url"]
+            try:
+                await client.post(f"{peer_url}/suicide")
+            except Exception:
+                pass
         return {
             "action": "kill",
             "peer": peer_id,
@@ -389,7 +403,7 @@ class ExperimentRunner:
         service_name = event.payload.get("service")
         if service_name:
             print(f"[+] t={actual_started:.2f}s restart service {service_name}")
-            await self._compose_command(["up", "-d", service_name])
+            await self._start_service(service_name)
             await asyncio.sleep(
                 float(event.payload.get("wait_after_seconds", self.bootstrap_wait_seconds))
             )
@@ -405,7 +419,7 @@ class ExperimentRunner:
         peer_id = event.payload["peer"]
         service_name = self.peer_map[peer_id].get("service", peer_id)
         print(f"[+] t={actual_started:.2f}s restart {peer_id}")
-        await self._compose_command(["up", "-d", service_name])
+        await self._start_service(service_name)
         await asyncio.sleep(
             float(event.payload.get("wait_after_seconds", self.bootstrap_wait_seconds))
         )
@@ -424,8 +438,14 @@ class ExperimentRunner:
     ) -> Dict[str, Any]:
         service_name = self._resolve_service_name(event.payload)
         print(f"[!] t={actual_started:.2f}s disconnect service {service_name}")
-        container_id = await self._get_container_id(service_name)
-        await self._docker_command(["network", "disconnect", self.network_name, container_id])
+        if self.orchestrator == "kubernetes":
+            await self._kubectl_exec(
+                service_name,
+                ["tc", "qdisc", "replace", "dev", "eth0", "root", "netem", "loss", "100%"],
+            )
+        else:
+            container_id = await self._get_container_id(service_name)
+            await self._docker_command(["network", "disconnect", self.network_name, container_id])
         return {
             "action": "disconnect",
             "service": service_name,
@@ -439,8 +459,15 @@ class ExperimentRunner:
     ) -> Dict[str, Any]:
         service_name = self._resolve_service_name(event.payload)
         print(f"[+] t={actual_started:.2f}s reconnect service {service_name}")
-        container_id = await self._get_container_id(service_name)
-        await self._docker_command(["network", "connect", self.network_name, container_id])
+        if self.orchestrator == "kubernetes":
+            await self._kubectl_exec(
+                service_name,
+                ["tc", "qdisc", "del", "dev", "eth0", "root"],
+                allow_nonzero=True,
+            )
+        else:
+            container_id = await self._get_container_id(service_name)
+            await self._docker_command(["network", "connect", self.network_name, container_id])
         await asyncio.sleep(float(event.payload.get("wait_after_seconds", 2.0)))
         await self._wait_for_service_ready(service_name)
         return {
@@ -457,10 +484,16 @@ class ExperimentRunner:
         service_name = self._resolve_service_name(event.payload)
         delay_ms = int(event.payload["delay_ms"])
         print(f"[!] t={actual_started:.2f}s delay service {service_name} by {delay_ms}ms")
-        container_id = await self._get_container_id(service_name)
-        await self._docker_command(
-            ["exec", container_id, "tc", "qdisc", "replace", "dev", "eth0", "root", "netem", "delay", f"{delay_ms}ms"]
-        )
+        if self.orchestrator == "kubernetes":
+            await self._kubectl_exec(
+                service_name,
+                ["tc", "qdisc", "replace", "dev", "eth0", "root", "netem", "delay", f"{delay_ms}ms"],
+            )
+        else:
+            container_id = await self._get_container_id(service_name)
+            await self._docker_command(
+                ["exec", container_id, "tc", "qdisc", "replace", "dev", "eth0", "root", "netem", "delay", f"{delay_ms}ms"]
+            )
         return {
             "action": "delay",
             "service": service_name,
@@ -475,11 +508,18 @@ class ExperimentRunner:
     ) -> Dict[str, Any]:
         service_name = self._resolve_service_name(event.payload)
         print(f"[+] t={actual_started:.2f}s clear delay for service {service_name}")
-        container_id = await self._get_container_id(service_name)
-        await self._docker_command(
-            ["exec", container_id, "tc", "qdisc", "del", "dev", "eth0", "root"],
-            allow_nonzero=True,
-        )
+        if self.orchestrator == "kubernetes":
+            await self._kubectl_exec(
+                service_name,
+                ["tc", "qdisc", "del", "dev", "eth0", "root"],
+                allow_nonzero=True,
+            )
+        else:
+            container_id = await self._get_container_id(service_name)
+            await self._docker_command(
+                ["exec", container_id, "tc", "qdisc", "del", "dev", "eth0", "root"],
+                allow_nonzero=True,
+            )
         return {
             "action": "clear_delay",
             "service": service_name,
@@ -526,6 +566,34 @@ class ExperimentRunner:
             timeout=SERVICE_CONTROL_TIMEOUT_SECONDS,
         )
 
+    async def _reset_stack(self) -> None:
+        if self.orchestrator == "kubernetes":
+            self._stop_port_forwards()
+            for service_name in self.service_names:
+                await self._stop_service(service_name)
+            for service_name in self.service_names:
+                await self._start_service(service_name)
+            self._start_port_forwards()
+            return
+
+        await self._compose_command(["down"])
+        await self._compose_command(["up", "-d", *self.service_names])
+
+    async def _stop_service(self, service_name: str) -> None:
+        if self.orchestrator == "kubernetes":
+            await self._kubectl_scale(service_name, 0)
+            self._restart_port_forwards()
+            return
+        await self._compose_command(["stop", service_name])
+
+    async def _start_service(self, service_name: str) -> None:
+        if self.orchestrator == "kubernetes":
+            await self._kubectl_scale(service_name, 1)
+            await self._kubectl_rollout_status(service_name)
+            self._restart_port_forwards()
+            return
+        await self._compose_command(["up", "-d", service_name])
+
     async def _docker_command(
         self,
         args: List[str],
@@ -549,6 +617,64 @@ class ExperimentRunner:
             )
         return stdout_text
 
+    async def _kubectl_command(
+        self,
+        args: List[str],
+        timeout: float = SERVICE_CONTROL_TIMEOUT_SECONDS,
+        allow_nonzero: bool = False,
+    ) -> str:
+        process = await asyncio.create_subprocess_exec(
+            "kubectl",
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
+        stdout_text = stdout.decode().strip()
+        stderr_text = stderr.decode().strip()
+        if process.returncode != 0 and not allow_nonzero:
+            raise RuntimeError(
+                f"kubectl {' '.join(args)} failed:\n"
+                f"stdout={stdout_text}\n"
+                f"stderr={stderr_text}"
+            )
+        return stdout_text
+
+    async def _kubectl_scale(self, service_name: str, replicas: int) -> None:
+        await self._kubectl_command(
+            [
+                "scale",
+                f"deployment/{service_name}",
+                "-n",
+                self.namespace,
+                f"--replicas={replicas}",
+            ]
+        )
+
+    async def _kubectl_rollout_status(self, service_name: str) -> None:
+        await self._kubectl_command(
+            [
+                "rollout",
+                "status",
+                f"deployment/{service_name}",
+                "-n",
+                self.namespace,
+                f"--timeout={int(self.service_ready_timeout_seconds)}s",
+            ],
+            timeout=self.service_ready_timeout_seconds + 15,
+        )
+
+    async def _kubectl_exec(
+        self,
+        service_name: str,
+        command: List[str],
+        allow_nonzero: bool = False,
+    ) -> str:
+        return await self._kubectl_command(
+            ["exec", "-n", self.namespace, f"deployment/{service_name}", "--", *command],
+            allow_nonzero=allow_nonzero,
+        )
+
     async def _get_container_id(self, service_name: str) -> str:
         output = await self._docker_command(
             ["compose", "-f", str(self.compose_file), "ps", "-q", service_name]
@@ -559,6 +685,8 @@ class ExperimentRunner:
         return container_id
 
     async def _wait_for_stack_ready(self) -> None:
+        if self.orchestrator == "kubernetes":
+            self._start_port_forwards()
         async with httpx.AsyncClient(timeout=5.0) as client:
             coordinator_url = self.spec.get("coordinator_url", "http://localhost:8000")
             origin_url = self.spec.get("origin_url", "http://localhost:8001")
@@ -566,6 +694,58 @@ class ExperimentRunner:
             await self._wait_for_url(client, f"{origin_url}/health")
             for peer_id in self.peer_map:
                 await self._wait_for_peer_ready(peer_id, client=client)
+
+    def _restart_port_forwards(self) -> None:
+        if self.orchestrator != "kubernetes":
+            return
+        self._stop_port_forwards()
+        self._start_port_forwards()
+
+    def _start_port_forwards(self) -> None:
+        if self.orchestrator != "kubernetes":
+            return
+        if any(process.poll() is None for process in self.port_forward_processes):
+            return
+
+        forwards = [
+            ("coordinator", self._local_port_from_url(self.spec.get("coordinator_url", "http://localhost:8000")), 8000),
+            ("origin", self._local_port_from_url(self.spec.get("origin_url", "http://localhost:8001")), 8001),
+        ]
+        for peer_id, peer_info in self.peer_map.items():
+            forwards.append((peer_info.get("service", peer_id), self._local_port_from_url(peer_info["url"]), 7000))
+
+        self.port_forward_processes = []
+        for service_name, local_port, remote_port in forwards:
+            process = subprocess.Popen(
+                [
+                    "kubectl",
+                    "port-forward",
+                    "-n",
+                    self.namespace,
+                    f"svc/{service_name}",
+                    f"{local_port}:{remote_port}",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            self.port_forward_processes.append(process)
+        time.sleep(2.0)
+
+    def _stop_port_forwards(self) -> None:
+        for process in self.port_forward_processes:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+        self.port_forward_processes = []
+
+    def _local_port_from_url(self, url: str) -> int:
+        parsed = urlparse(url)
+        if parsed.scheme != "http" or parsed.hostname not in {"localhost", "127.0.0.1"} or parsed.port is None:
+            raise ValueError(f"Kubernetes runner expects localhost URL, got: {url}")
+        return parsed.port
 
     async def _wait_for_service_ready(self, service_name: str) -> None:
         health_url = self._service_health_url(service_name)

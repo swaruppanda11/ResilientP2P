@@ -39,11 +39,13 @@ async def lifespan(app: FastAPI):
     # 3. Background tasks: heartbeat + DHT republish
     heartbeat_task = asyncio.create_task(heartbeat_loop())
     republish_task = asyncio.create_task(republish_loop())
+    rebootstrap_task = asyncio.create_task(rebootstrap_loop())
 
     yield
 
     heartbeat_task.cancel()
     republish_task.cancel()
+    rebootstrap_task.cancel()
     # Graceful DHT departure: remove self from provider lists.
     await dht_node.remove_peer(settings.peer_id, list(cache.storage.keys()))
     dht_node.stop()
@@ -58,6 +60,12 @@ async def republish_loop():
     while True:
         await asyncio.sleep(settings.dht_republish_interval_seconds)
         await client.republish_all()
+
+async def rebootstrap_loop():
+    """Periodically retry DHT bootstrap so peers recover from startup races."""
+    while True:
+        await asyncio.sleep(settings.dht_rebootstrap_interval_seconds)
+        await dht_node.bootstrap_once()
 
 app = FastAPI(title=f"Peer {settings.peer_id}", lifespan=lifespan)
 

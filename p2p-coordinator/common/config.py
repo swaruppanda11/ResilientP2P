@@ -63,6 +63,7 @@ class PeerSettings(CommonSettings):
     dht_bootstrap_port: int = 6000
     dht_lookup_timeout_seconds: float = 0.5
     dht_republish_interval_seconds: int = 300
+    dht_rebootstrap_interval_seconds: int = 15
     service_name: str = "peer"
 
 
@@ -123,4 +124,5 @@ def get_peer_settings() -> PeerSettings:
         dht_bootstrap_port=_get_int("DHT_BOOTSTRAP_PORT", 6000),
         dht_lookup_timeout_seconds=_get_float("DHT_LOOKUP_TIMEOUT_SECONDS", 0.5),
         dht_republish_interval_seconds=_get_int("DHT_REPUBLISH_INTERVAL_SECONDS", 300),
+        dht_rebootstrap_interval_seconds=_get_int("DHT_REBOOTSTRAP_INTERVAL_SECONDS", 15),
     )

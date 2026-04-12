@@ -51,6 +51,7 @@ class DHTPeerSettings(CommonSettings):
     dht_bootstrap_port: int
     dht_lookup_timeout_seconds: float
     dht_republish_interval_seconds: int
+    dht_rebootstrap_interval_seconds: int
     service_name: str = "dht-peer"
 
 
@@ -91,4 +92,5 @@ def get_dht_peer_settings() -> DHTPeerSettings:
         dht_bootstrap_port=_get_int("DHT_BOOTSTRAP_PORT", 6000),
         dht_lookup_timeout_seconds=_get_float("DHT_LOOKUP_TIMEOUT_SECONDS", 0.5),
         dht_republish_interval_seconds=_get_int("DHT_REPUBLISH_INTERVAL_SECONDS", 300),
+        dht_rebootstrap_interval_seconds=_get_int("DHT_REBOOTSTRAP_INTERVAL_SECONDS", 15),
     )

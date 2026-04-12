@@ -21,6 +21,7 @@ from kademlia.network import Server
 from common.logging import get_logger
 
 ANNOUNCE_OPERATION_TIMEOUT_SECONDS = 1.0
+BOOTSTRAP_OPERATION_TIMEOUT_SECONDS = 2.0
 
 
 class DHTNode:
@@ -38,16 +39,78 @@ class DHTNode:
         self.server = Server(ksize=ksize, alpha=alpha)
         self.logger = logger or get_logger("dht.node")
         self._started = False
+        self._bootstrap_nodes: List[tuple] = []
 
     async def start(self, bootstrap_nodes: Optional[List[tuple]] = None) -> None:
         """Start the DHT node and optionally bootstrap from known peers."""
         await self.server.listen(self.port)
-        if bootstrap_nodes:
-            await self.server.bootstrap(bootstrap_nodes)
+        self._bootstrap_nodes = list(bootstrap_nodes or [])
+        if self._bootstrap_nodes:
+            await self.bootstrap_with_retry(attempts=5, retry_delay_seconds=1.0)
         self._started = True
         self.logger.info(
             json.dumps({"event": "dht_started", "port": self.port, "bootstrap": bootstrap_nodes})
         )
+
+    async def bootstrap_once(self) -> bool:
+        """
+        Attempt a single bootstrap against the configured seed nodes.
+
+        Returns True only when the library reports at least one contact in the
+        resulting routing bootstrap path.
+        """
+        if not self._bootstrap_nodes:
+            return True
+        try:
+            result = await asyncio.wait_for(
+                self.server.bootstrap(self._bootstrap_nodes),
+                timeout=BOOTSTRAP_OPERATION_TIMEOUT_SECONDS,
+            )
+            ok = bool(result)
+            level = logging.INFO if ok else logging.WARNING
+            self.logger.log(
+                level,
+                json.dumps(
+                    {
+                        "event": "dht_bootstrap_attempt",
+                        "bootstrap": self._bootstrap_nodes,
+                        "result_count": len(result or []),
+                        "succeeded": ok,
+                    }
+                ),
+            )
+            return ok
+        except asyncio.TimeoutError:
+            self.logger.warning(
+                json.dumps(
+                    {
+                        "event": "dht_bootstrap_timeout",
+                        "bootstrap": self._bootstrap_nodes,
+                    }
+                )
+            )
+            return False
+        except Exception as exc:
+            self.logger.warning(
+                json.dumps(
+                    {
+                        "event": "dht_bootstrap_error",
+                        "bootstrap": self._bootstrap_nodes,
+                        "error": str(exc),
+                    }
+                )
+            )
+            return False
+
+    async def bootstrap_with_retry(
+        self, attempts: int = 5, retry_delay_seconds: float = 1.0
+    ) -> bool:
+        for attempt in range(1, attempts + 1):
+            if await self.bootstrap_once():
+                return True
+            if attempt < attempts:
+                await asyncio.sleep(retry_delay_seconds)
+        return False
 
     async def announce(self, object_id: str, peer_id: str, peer_url: str, location_id: str) -> bool:
         """

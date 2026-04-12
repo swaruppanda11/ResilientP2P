@@ -38,6 +38,8 @@ metadata:
   name: dht-bootstrap
   namespace: p2p-dht
 spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
   selector:
     app: dht-bootstrap
   ports:

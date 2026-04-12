@@ -1,0 +1,191 @@
+{
+  "seed": 42,
+  "orchestrator": "kubernetes",
+  "namespace": "p2p-coordinator",
+  "coordinator_url": "http://localhost:8000",
+  "origin_url": "http://localhost:8001",
+  "results_dir": "results-k8s",
+  "bootstrap_wait_seconds": 8,
+  "service_ready_timeout_seconds": 90,
+  "reset_stack_before_each_scenario": true,
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
+  "peer_map": {
+    "peer-a1": {
+      "url": "http://localhost:7001",
+      "service": "peer-a1",
+      "location_id": "Building-A"
+    },
+    "peer-a2": {
+      "url": "http://localhost:7002",
+      "service": "peer-a2",
+      "location_id": "Building-A"
+    },
+    "peer-b1": {
+      "url": "http://localhost:7003",
+      "service": "peer-b1",
+      "location_id": "Building-B"
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Explicit Locality Smoke Test",
+      "description": "Simple deterministic run for sanity checking coordinator lookup and peer transfer.",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "lecture-1-video" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "fetch", "peer": "peer-a2", "object_id": "lecture-1-video" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "lecture-1-video" }
+      ]
+    },
+    {
+      "name": "Course Burst Workload",
+      "description": "Students in the same course request overlapping content during a short burst window.",
+      "duration_seconds": 18,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": ["peer-a1", "peer-a2"],
+          "objects": [
+            { "id": "csci5673-assignment-1", "weight": 5 },
+            { "id": "csci5673-lecture-5", "weight": 3 },
+            { "id": "csci5673-reading-2", "weight": 2 }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 8,
+          "count": 16
+        },
+        {
+          "kind": "random_uniform",
+          "peers": ["peer-b1"],
+          "objects": [
+            { "id": "campus-news", "weight": 2 },
+            { "id": "csci5673-assignment-1", "weight": 1 }
+          ],
+          "start_seconds": 4,
+          "end_seconds": 16,
+          "count": 6
+        }
+      ]
+    },
+    {
+      "name": "Burst With Independent Churn",
+      "description": "One peer drops during an active course burst and rejoins later.",
+      "duration_seconds": 24,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": ["peer-a1", "peer-a2", "peer-b1"],
+          "objects": [
+            { "id": "midterm-review", "weight": 4 },
+            { "id": "practice-set", "weight": 3 },
+            { "id": "formula-sheet", "weight": 1 }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 14,
+          "count": 20
+        }
+      ],
+      "churn": [
+        {
+          "kind": "independent",
+          "peers": ["peer-a2", "peer-b1"],
+          "count": 1,
+          "start_seconds": 5,
+          "end_seconds": 9,
+          "downtime_seconds": 6
+        }
+      ]
+    },
+    {
+      "name": "Correlated Class Exit Churn",
+      "description": "Two peers leave together to emulate a class ending, then return after a short downtime.",
+      "duration_seconds": 26,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": ["peer-a1", "peer-a2"],
+          "objects": [
+            { "id": "project-demo", "weight": 4 },
+            { "id": "lab-starter", "weight": 2 }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 10,
+          "count": 12
+        },
+        {
+          "kind": "random_uniform",
+          "peers": ["peer-a1", "peer-a2", "peer-b1"],
+          "objects": [
+            { "id": "project-demo", "weight": 3 },
+            { "id": "department-calendar", "weight": 1 }
+          ],
+          "start_seconds": 10,
+          "end_seconds": 22,
+          "count": 10
+        }
+      ],
+      "churn": [
+        {
+          "kind": "correlated",
+          "events": [
+            {
+              "at_seconds": 11,
+              "peers": ["peer-a1", "peer-a2"],
+              "downtime_seconds": 6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Coordinator Failure Fallback Smoke Test",
+      "description": "Warm an object through the coordinator path, stop the coordinator, then verify DHT fallback for warm and cold requests.",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "fallback-smoke-1" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "kill", "service": "coordinator" },
+        { "action": "wait", "seconds": 2 },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "fallback-smoke-1" },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "fallback-new-object-1" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "restart", "service": "coordinator", "wait_after_seconds": 8 },
+        { "action": "wait", "seconds": 11 }
+      ]
+    },
+    {
+      "name": "Coordinator Partition Fallback Test",
+      "description": "Inject full packet loss on the coordinator pod to force DHT fallback under network partition rather than clean crash.",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "partition-fallback-1" },
+        { "action": "wait", "seconds": 4 },
+        { "action": "disconnect", "service": "coordinator" },
+        { "action": "wait", "seconds": 2 },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "partition-fallback-1" },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "partition-new-object-1" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "connect", "service": "coordinator", "wait_after_seconds": 3 },
+        { "action": "wait", "seconds": 11 }
+      ]
+    },
+    {
+      "name": "Coordinator Timeout Fallback Test",
+      "description": "Inject high network delay on the coordinator so coordinator lookups exceed the timeout budget and fall back to DHT.",
+      "steps": [
+        { "action": "fetch", "peer": "peer-a1", "object_id": "timeout-fallback-1" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "delay", "service": "coordinator", "delay_ms": 1200 },
+        { "action": "wait", "seconds": 1 },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "timeout-fallback-1" },
+        { "action": "fetch", "peer": "peer-b1", "object_id": "timeout-new-object-1" },
+        { "action": "wait", "seconds": 1 },
+        { "action": "clear_delay", "service": "coordinator" },
+        { "action": "wait", "seconds": 2 }
+      ]
+    }
+  ]
+}
