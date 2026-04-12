@@ -1,0 +1,520 @@
+{
+  "scenario": "Correlated Class Exit Churn",
+  "description": "Two Building-A peers leave simultaneously (class ends) then return. Key question: does DHT degrade gracefully and does the coordinator fallback maintain availability?",
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
+  "requested_duration_seconds": 26,
+  "actual_duration_seconds": 81.34336769999936,
+  "event_count": 26,
+  "events": [
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 0.31782679481783593,
+      "actual_started_seconds": 0.3222292000427842,
+      "runner_latency_ms": 312.71480000577867,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-dht.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 207.07792200846598,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 1.5547949981178155,
+      "actual_started_seconds": 1.5586696001701057,
+      "runner_latency_ms": 527.9978001490235,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1.p2p-dht.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 403.77060501486994,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 1.5965931637689013,
+      "actual_started_seconds": 2.0866957001853734,
+      "runner_latency_ms": 136.50739984586835,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1.p2p-dht.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 87.37544697942212,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "lab-starter",
+      "scheduled_at_seconds": 2.4489185380347624,
+      "actual_started_seconds": 2.46081000007689,
+      "runner_latency_ms": 202.04619993455708,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-dht.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 166.3700439967215,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "lab-starter",
+      "scheduled_at_seconds": 3.7992730063733737,
+      "actual_started_seconds": 3.8045178002212197,
+      "runner_latency_ms": 95.23409977555275,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1.p2p-dht.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 65.54508800036274,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 5.053552881033624,
+      "actual_started_seconds": 5.061730300076306,
+      "runner_latency_ms": 39.27899990230799,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.4733099776785821,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 5.362280914547007,
+      "actual_started_seconds": 5.3724191000219434,
+      "runner_latency_ms": 72.4655999802053,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1.p2p-dht.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 39.35897900373675,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "lab-starter",
+      "scheduled_at_seconds": 5.892656838759088,
+      "actual_started_seconds": 5.90374210011214,
+      "runner_latency_ms": 42.26260003633797,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.6681200175080448,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "lab-starter",
+      "scheduled_at_seconds": 6.037260313668911,
+      "actual_started_seconds": 6.044133000075817,
+      "runner_latency_ms": 31.523300101980567,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 2.1630800038110465,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "lab-starter",
+      "scheduled_at_seconds": 6.394267984578837,
+      "actual_started_seconds": 6.4029800000134856,
+      "runner_latency_ms": 32.68720000050962,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.29620001441799104,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 6.766994874229113,
+      "actual_started_seconds": 6.776306600077078,
+      "runner_latency_ms": 42.299700202420354,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.34125999081879854,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 7.160196129224035,
+      "actual_started_seconds": 7.162241200217977,
+      "runner_latency_ms": 70.41409984230995,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1.p2p-dht.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 42.45740899932571,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 10.83466178588489,
+      "actual_started_seconds": 10.848394100088626,
+      "runner_latency_ms": 193.93639988265932,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1.p2p-dht.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 100.94726897659712,
+      "size": 1048576
+    },
+    {
+      "action": "kill",
+      "peer": "peer-a1",
+      "scheduled_at_seconds": 11.0,
+      "actual_started_seconds": 11.042359000071883,
+      "status": "issued"
+    },
+    {
+      "action": "kill",
+      "peer": "peer-a2",
+      "scheduled_at_seconds": 11.0,
+      "actual_started_seconds": 13.401198600186035,
+      "status": "issued"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 11.960829925143141,
+      "actual_started_seconds": 15.713745300192386,
+      "runner_latency_ms": 73.33629997447133,
+      "status": "failed",
+      "source": "error",
+      "provider": null,
+      "candidate_count": 0,
+      "service_latency_ms": 0.0,
+      "size": 0,
+      "error": "Server disconnected without sending a response."
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "department-calendar",
+      "scheduled_at_seconds": 13.472655563225286,
+      "actual_started_seconds": 15.787114400183782,
+      "runner_latency_ms": 2305.47589994967,
+      "status": "failed",
+      "source": "error",
+      "provider": null,
+      "candidate_count": 0,
+      "service_latency_ms": 0.0,
+      "size": 0,
+      "error": "All connection attempts failed"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 13.518139376885115,
+      "actual_started_seconds": 18.092612500069663,
+      "runner_latency_ms": 2348.1637998484075,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-dht.svc.cluster.local:8001",
+      "candidate_count": 1,
+      "service_latency_ms": 2200.224803003948,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 14.263248402730259,
+      "actual_started_seconds": 20.440797600196674,
+      "runner_latency_ms": 34.41750002093613,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.4083499952685088,
+      "size": 1048576
+    },
+    {
+      "action": "restart",
+      "peer": "peer-a1",
+      "service": "peer-a1",
+      "scheduled_at_seconds": 17.0,
+      "actual_started_seconds": 20.4752345001325,
+      "status": "restarted"
+    },
+    {
+      "action": "restart",
+      "peer": "peer-a2",
+      "service": "peer-a2",
+      "scheduled_at_seconds": 17.0,
+      "actual_started_seconds": 50.675621500005946,
+      "status": "restarted"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 17.619739458364723,
+      "actual_started_seconds": 80.88934810017236,
+      "runner_latency_ms": 106.57689999789,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.4074099997524172,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 17.6282133311728,
+      "actual_started_seconds": 80.99594470020384,
+      "runner_latency_ms": 243.28109994530678,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-b1.p2p-dht.svc.cluster.local:7000",
+      "candidate_count": 2,
+      "service_latency_ms": 138.20567599032074,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 20.340482803729326,
+      "actual_started_seconds": 81.23924880009145,
+      "runner_latency_ms": 34.05459993518889,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.38400001358240843,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 20.397804001063236,
+      "actual_started_seconds": 81.27333100000396,
+      "runner_latency_ms": 36.71120014041662,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a2",
+      "candidate_count": 0,
+      "service_latency_ms": 0.7807310030329973,
+      "size": 1048576
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "project-demo",
+      "scheduled_at_seconds": 21.239855052549927,
+      "actual_started_seconds": 81.31006480008364,
+      "runner_latency_ms": 33.28169998712838,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.42196898721158504,
+      "size": 1048576
+    }
+  ],
+  "summary": {
+    "total_events": 26,
+    "fetch_count": 22,
+    "successful_fetch_count": 20,
+    "failed_fetch_count": 2,
+    "success_rate": 0.9090909090909091,
+    "source_counts": {
+      "origin": 3,
+      "peer": 7,
+      "cache": 10
+    },
+    "bytes_by_source": {
+      "origin": 3145728,
+      "peer": 7340032,
+      "cache": 10485760
+    },
+    "service_latency_ms": {
+      "min": 0.29620001441799104,
+      "mean": 172.88388359884266,
+      "median": 20.761029503773898,
+      "p95": 493.5933149143251,
+      "max": 2200.224803003948
+    },
+    "runner_latency_ms": {
+      "min": 31.523300101980567,
+      "mean": 231.7927499767393,
+      "median": 71.43984991125762,
+      "p95": 619.006100133994,
+      "max": 2348.1637998484075
+    },
+    "average_candidate_count": 0.45
+  },
+  "peer_stats": {
+    "peer-a1": {
+      "status": "ok",
+      "service": "dht-peer:peer-a1",
+      "peer_id": "peer-a1",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 0,
+      "cache_object_count": 0,
+      "cache_hit_count": 0,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-a2": {
+      "status": "ok",
+      "service": "dht-peer:peer-a2",
+      "peer_id": "peer-a2",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 1,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-b1": {
+      "status": "ok",
+      "service": "dht-peer:peer-b1",
+      "peer_id": "peer-b1",
+      "location_id": "Building-B",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 5,
+      "cache_miss_count": 2,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    }
+  },
+  "coordinator_stats": {
+    "status": "ok",
+    "service": "coordinator",
+    "peer_count": 3,
+    "object_count": 2,
+    "provider_entries": 3,
+    "max_providers_per_lookup": 3,
+    "peer_timeout_seconds": 30,
+    "provider_selection_policy": "locality_then_load",
+    "total_upload_requests": 7,
+    "total_upload_bytes": 7340032,
+    "peer_loads": [
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 6,
+        "total_upload_bytes": 6291456,
+        "last_transfer_at": "2026-04-12T16:06:29.223165"
+      },
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 1,
+        "total_upload_bytes": 1048576,
+        "last_transfer_at": "2026-04-12T16:07:39.409464"
+      },
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      }
+    ]
+  },
+  "generated_from": {
+    "request_profiles": [
+      {
+        "kind": "course_burst",
+        "peers": [
+          "peer-a1",
+          "peer-a2"
+        ],
+        "objects": [
+          {
+            "id": "project-demo",
+            "weight": 4
+          },
+          {
+            "id": "lab-starter",
+            "weight": 2
+          }
+        ],
+        "start_seconds": 0,
+        "duration_seconds": 10,
+        "count": 12
+      },
+      {
+        "kind": "random_uniform",
+        "peers": [
+          "peer-a1",
+          "peer-a2",
+          "peer-b1"
+        ],
+        "objects": [
+          {
+            "id": "project-demo",
+            "weight": 3
+          },
+          {
+            "id": "department-calendar",
+            "weight": 1
+          }
+        ],
+        "start_seconds": 10,
+        "end_seconds": 22,
+        "count": 10
+      }
+    ],
+    "churn_profiles": [
+      {
+        "kind": "correlated",
+        "events": [
+          {
+            "at_seconds": 11,
+            "peers": [
+              "peer-a1",
+              "peer-a2"
+            ],
+            "downtime_seconds": 6
+          }
+        ]
+      }
+    ],
+    "steps": []
+  }
+}

@@ -168,6 +168,25 @@ Latency ordering is correct in both stacks: origin > cross-building > same-build
 
 Everything below is Tanish's responsibility. Swarup is available for infra help if needed.
 
+### Completed status (2026-04-12)
+
+- [x] Both experiment runners were adapted for Kubernetes:
+  - [x] `p2p-coordinator/experiments/runner.py`
+  - [x] `p2p-dht/experiments/runner.py`
+- [x] Both cloud workload specs were created:
+  - [x] `p2p-coordinator/experiments/workload-k8s.json`
+  - [x] `p2p-dht/experiments/workload-k8s.json`
+- [x] One failure-injection path per stack was manually validated first
+- [x] The coordinator cloud fallback issue was investigated and fixed
+- [x] All 7 scenarios were executed on both stacks in GKE
+- [x] Cloud result artifacts were collected under each stack's `results-k8s/`
+- [x] A consolidated single-run cloud comparison table was generated:
+  - [x] [CLOUD_RESULTS_COMPARISON.md](CLOUD_RESULTS_COMPARISON.md)
+
+Known remaining limitation from the completed single-run cloud suite:
+
+- `DHT Timeout Fallback Test` still degrades to origin service for the warm-object request. This is a measured system limitation, not a runner or deployment failure, and should be reported as such.
+
 ### Getting started — cluster access
 
 ```bash
@@ -228,6 +247,8 @@ kubectl get pods -n p2p-coordinator -o wide
 
 ### Task 1: Adapt runner.py for Kubernetes
 
+Status: [x] Complete
+
 Both `p2p-coordinator/experiments/runner.py` and `p2p-dht/experiments/runner.py`
 currently use Docker Compose commands. These need K8s equivalents:
 
@@ -251,6 +272,8 @@ kubectl rollout status deployment/<service> -n <namespace> --timeout=60s
 
 ### Task 2: Create workload-k8s.json
 
+Status: [x] Complete
+
 Copy `workload.json` and change:
 
 - `compose_file` → remove or replace with a `namespace` field
@@ -263,6 +286,8 @@ All 7 scenarios, seed, topology, and object names stay unchanged.
 
 ### Task 3: Run all 7 scenarios on both stacks
 
+Status: [x] Complete
+
 For each stack:
 
 1. Start the port-forwards
@@ -271,6 +296,8 @@ For each stack:
 4. Also collect pod logs: `kubectl logs -n <namespace> deployment/<peer> > logs/<peer>.log`
 
 ### Task 4: Collect metrics and build comparison
+
+Status: [x] Complete for single-run cloud results
 
 From pod logs, extract `METRIC:` lines. Key metrics to compare:
 
@@ -285,6 +312,8 @@ Result naming convention: `<stack>_<scenario>_<timestamp>_<git-sha>.json`
 Example: `coordinator_locality-smoke_20260411T1830_bf3db98.json`
 
 ### Task 5: Failure injection validation
+
+Status: [x] Complete
 
 Before running the full 7-scenario suite, manually verify fault injection works:
 
@@ -304,9 +333,14 @@ Repeat for DHT stack (kill dht-bootstrap instead).
 
 ### Exit Condition
 
-- [ ] All 7 scenarios run on both stacks in cloud
-- [ ] Metrics collected and comparison table/plots generated
-- [ ] Results match the expected behavior from local tests (qualitatively)
+- [x] All 7 scenarios run on both stacks in cloud
+- [x] Metrics collected and consolidated comparison table generated
+- [x] Results match the expected behavior from local tests qualitatively
+
+Notes:
+
+- The comparison closeout for Phase 6/9 is captured in [CLOUD_RESULTS_COMPARISON.md](CLOUD_RESULTS_COMPARISON.md).
+- Plot generation and repeated-run aggregation remain Phase 10 work.
 
 ---
 
@@ -314,11 +348,15 @@ Repeat for DHT stack (kill dht-bootstrap instead).
 
 After Tanish has cloud results, both teammates validate together:
 
-- [ ] Do warm-object fallback paths behave correctly in both architectures?
-- [ ] Do cold-object misses degrade to origin as expected?
-- [ ] Does the latency ordering (same-building < cross-building < origin) hold?
-- [ ] Are the metrics sufficient for the final report?
-- [ ] Side-by-side comparison table is agreed on
+- [x] Warm-object fallback paths behave correctly in both architectures, with the documented exception of the DHT timeout scenario
+- [x] Cold-object misses degrade to origin as expected
+- [x] The latency ordering (same-building < cross-building < origin) holds in the cloud smoke results
+- [x] The metrics are sufficient for the current report update and single-run cloud comparison
+- [x] A side-by-side comparison table exists for the current cloud run
+
+Joint-validation output:
+
+- [x] [CLOUD_RESULTS_COMPARISON.md](CLOUD_RESULTS_COMPARISON.md)
 
 ---
 
@@ -342,9 +380,10 @@ Only start this after all phases above are complete.
 | 1 | GCP project, cluster, and registry ready | Swarup | done |
 | 2 | All 5 images built and pushed | Swarup | done |
 | 3 | Both stacks deployed and smoke-tested | Swarup | done |
-| 4 | Runner adapted for K8s | Tanish | not started |
-| 5 | All 7 scenarios run on both stacks | Tanish | not started |
-| 6 | Comparison table / final results | Both | not started |
+| 4 | Runner adapted for K8s | Tanish | done |
+| 5 | All 7 scenarios run on both stacks | Tanish | done |
+| 6 | Single-run cloud comparison table / results closeout | Both | done |
+| 7 | Repeated-run automation and aggregate outputs | Both | pending (Phase 10) |
 
 ---
 
@@ -354,6 +393,7 @@ Only start this after all phases above are complete.
 - Do **not** treat raw GCP latency as a replacement for the campus simulation model.
 - Do **not** start with repeated runs before manual cloud validation succeeds.
 - Do **not** mix both architectures in one test session unless namespaces, services, and result collection are clearly isolated.
+- The current cloud comparison is based on a single full run per stack. Final report-quality aggregate values still require repeated runs.
 - The cluster costs ~$65/month. Tear down after evaluation is done:
 
 ```bash
