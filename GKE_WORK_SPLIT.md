@@ -16,26 +16,32 @@ The goal of this split is to let both teammates work independently as much as po
 
 ## Work Allocation Principles
 
-### Swarup Owns
+Revised split (agreed 2026-04-11): Swarup owns everything up to the point both
+stacks are live and smoke-tested in GKE. Tanish owns everything from experiment
+workload migration through final evaluation and results.
 
-- shared cloud infrastructure scaffolding
-- Artifact Registry and cluster setup
-- DHT-primary stack deployment in GKE
-- DHT-specific Kubernetes configuration
+### Swarup Owns (Infrastructure + Deployment, Phases 1–6)
 
-### Tanish Owns
+- GCP project, cluster, Artifact Registry, node pools
+- Build and push all 5 images
+- Kubernetes manifests for both stacks (coordinator-primary and DHT-primary)
+- Deploy both stacks into GKE
+- Manual bring-up smoke tests for both stacks
+- Confirm pods are reachable, configmaps applied, cross-zone placement correct
 
-- coordinator-primary stack deployment in GKE
-- coordinator-side cloud validation
-- result/metrics collection workflow for cloud MVP
-- experiment validation against report claims
+### Tanish Owns (Experiments + Evaluation, Phases 7–8)
 
-### Shared
+- Adapt experiment runners for Kubernetes (kubectl scale / exec instead of compose)
+- Create `workload-k8s.json` variants for both stacks
+- Cloud failure injection (crash, delay, optionally partition)
+- Run all 7 scenarios on both stacks in cloud
+- Collect metrics, build comparison tables, feed the final report
 
-- common base manifests and config conventions
-- workload execution path
-- final cloud testing
-- repeated runs and final result generation
+### Shared (Phase 9 Integration + Phase 10 Later Work)
+
+- Joint cloud validation against report claims
+- Repeated-run automation (Phase 10)
+- Terraform, GCS exports, plots (Phase 10)
 
 ---
 
@@ -134,220 +140,191 @@ Each image is also tagged `:v1`, which is what the manifests reference.
 
 ---
 
-## Phase 3: Kubernetes Base Layer
+## Phases 3–5: Deploy + Smoke Test — COMPLETE (Swarup, 2026-04-11)
 
-This phase creates the common deployment foundation.
+All done by Swarup. Both stacks are live in GKE, smoke-tested, and working.
 
-### Swarup
+### What was deployed
 
-- [ ] Own the shared base Kubernetes structure:
-  - [ ] namespaces
-  - [ ] shared config conventions
-  - [ ] base service naming conventions
-- [ ] Verify DNS/service naming works for:
-  - [ ] `coordinator`
-  - [ ] `origin`
-  - [ ] `dht-bootstrap`
+- Namespaces: `p2p-coordinator`, `p2p-dht`
+- ConfigMaps: `p2p-common-config` in each namespace
+- 6 pods per stack: coordinator, origin, dht-bootstrap, peer-a1, peer-a2, peer-b1
+- All pods `Running 1/1`, zero restarts
+- Image tag on all manifests: `:v1` (git SHA `bf3db98`)
 
-### Tanish
+### Smoke test results (2026-04-11)
 
-- [ ] Define the required application env vars for cloud deployment:
-  - [ ] `PEER_ID`
-  - [ ] `LOCATION_ID`
-  - [ ] `COORDINATOR_URL`
-  - [ ] `ORIGIN_URL`
-  - [ ] `DHT_BOOTSTRAP_HOST`
-  - [ ] `DHT_BOOTSTRAP_PORT`
-  - [ ] cache size
-  - [ ] delay model values
-- [ ] Verify these match current local behavior
+| Step | Coordinator Stack | DHT Stack |
+|------|-------------------|-----------|
+| Cold fetch (origin) | 195 ms, source=origin | 193 ms, source=origin |
+| Same-building peer fetch (peer-a2 → peer-a1) | 95 ms, source=peer | 74 ms, source=peer |
+| Cross-building peer fetch (peer-b1 → peer-a2) | 107 ms, source=peer | 111 ms, source=peer |
 
-### Shared Exit Condition
-
-- [ ] Base manifests are consistent across both architectures
-- [ ] Docker-compose service names are correctly mapped to Kubernetes DNS/service names
+Latency ordering is correct in both stacks: origin > cross-building > same-building.
 
 ---
 
-## Phase 4: Coordinator Stack Bring-Up (Tanish Lead)
+## Phase 6+: Tanish's Handoff — Experiments + Evaluation
 
-### Tanish
+Everything below is Tanish's responsibility. Swarup is available for infra help if needed.
 
-- [ ] Update coordinator stack manifests with final image URIs
-- [ ] Keep the current app-layer topology delay model enabled
-- [ ] Deploy:
-  - [ ] coordinator
-  - [ ] origin
-  - [ ] dht-bootstrap
-  - [ ] initial peers
-- [ ] Prefer stable peer identity in manifests
-- [ ] Validate readiness of all coordinator-stack pods
-- [ ] Run manual cloud validation:
-  - [ ] origin fetch works
-  - [ ] same-building peer fetch works
-  - [ ] cross-building peer fetch works
-  - [ ] coordinator crash fallback works
-  - [ ] coordinator partition/timeout path can be exercised later if needed
+### Getting started — cluster access
 
-### Swarup
+```bash
+# 1. Auth and get cluster credentials
+gcloud auth login
+gcloud config set project resilientp2p-492916
+gcloud container clusters get-credentials resilientp2p-gke \
+  --zone us-central1-f --project resilientp2p-492916
 
-- [ ] Review coordinator stack manifest assumptions for consistency with DHT stack
-- [ ] Help validate bootstrap/DHT fallback connectivity if needed
+# 2. Verify both stacks are running
+kubectl get pods -n p2p-coordinator
+kubectl get pods -n p2p-dht
+```
+
+### Port-forward commands
+
+To reach pods from your local machine:
+
+```bash
+# Coordinator stack (ports 7001-7003)
+kubectl port-forward -n p2p-coordinator svc/peer-a1 7001:7000 &
+kubectl port-forward -n p2p-coordinator svc/peer-a2 7002:7000 &
+kubectl port-forward -n p2p-coordinator svc/peer-b1 7003:7000 &
+kubectl port-forward -n p2p-coordinator svc/coordinator 8000:8000 &
+
+# DHT stack (ports 9001-9003)
+kubectl port-forward -n p2p-dht svc/peer-a1 9001:7000 &
+kubectl port-forward -n p2p-dht svc/peer-a2 9002:7000 &
+kubectl port-forward -n p2p-dht svc/peer-b1 9003:7000 &
+kubectl port-forward -n p2p-dht svc/coordinator 9000:8000 &
+```
+
+Quick health check after port-forward:
+
+```bash
+curl -s http://localhost:7001/health   # coordinator stack peer-a1
+curl -s http://localhost:9001/health   # DHT stack peer-a1
+```
+
+### Useful kubectl commands
+
+```bash
+# View logs for a specific pod
+kubectl logs -n p2p-coordinator deployment/peer-a1
+kubectl logs -n p2p-dht deployment/peer-a1
+
+# Extract METRIC lines from all coordinator-stack peers
+kubectl logs -n p2p-coordinator deployment/peer-a1 | grep "^METRIC:"
+kubectl logs -n p2p-coordinator deployment/peer-a2 | grep "^METRIC:"
+kubectl logs -n p2p-coordinator deployment/peer-b1 | grep "^METRIC:"
+
+# Get cache stats from a peer
+curl -s http://localhost:7001/stats | python3 -m json.tool
+
+# Check which node a pod landed on (verify zone placement)
+kubectl get pods -n p2p-coordinator -o wide
+```
+
+### Task 1: Adapt runner.py for Kubernetes
+
+Both `p2p-coordinator/experiments/runner.py` and `p2p-dht/experiments/runner.py`
+currently use Docker Compose commands. These need K8s equivalents:
+
+| Local (Docker Compose) | Cloud (Kubernetes) |
+|---|---|
+| `docker compose kill <service>` | `kubectl scale deployment/<service> -n <namespace> --replicas=0` |
+| `docker compose up -d <service>` (restart) | `kubectl scale deployment/<service> -n <namespace> --replicas=1` |
+| `docker network disconnect <network> <container>` | `kubectl exec deployment/<service> -n <namespace> -- tc qdisc add dev eth0 root netem loss 100%` |
+| `docker network connect <network> <container>` | `kubectl exec deployment/<service> -n <namespace> -- tc qdisc del dev eth0 root` |
+| `docker compose exec <service> tc qdisc add dev eth0 root netem delay <N>ms` | `kubectl exec deployment/<service> -n <namespace> -- tc qdisc add dev eth0 root netem delay <N>ms` |
+| `docker compose exec <service> tc qdisc del dev eth0 root` | `kubectl exec deployment/<service> -n <namespace> -- tc qdisc del dev eth0 root` |
+
+All pods already have `NET_ADMIN` capability, so `tc` commands will work.
+
+After scaling to 0 and back to 1, wait for the pod to pass its readiness probe
+before continuing:
+
+```bash
+kubectl rollout status deployment/<service> -n <namespace> --timeout=60s
+```
+
+### Task 2: Create workload-k8s.json
+
+Copy `workload.json` and change:
+
+- `compose_file` → remove or replace with a `namespace` field
+- `peer_map` URLs → use `localhost` port-forward ports (7001/7002/7003 for coordinator, 9001/9002/9003 for DHT)
+- `coordinator_url` → `http://localhost:8000` (coordinator stack) or `http://localhost:9000` (DHT stack)
+- `bootstrap_wait_seconds` → increase to 8–10 (pod restart is slower than compose restart)
+- `service_ready_timeout_seconds` → increase to 90
+
+All 7 scenarios, seed, topology, and object names stay unchanged.
+
+### Task 3: Run all 7 scenarios on both stacks
+
+For each stack:
+
+1. Start the port-forwards
+2. Run `python runner.py --config workload-k8s.json`
+3. Collect the results from the `results/` directory
+4. Also collect pod logs: `kubectl logs -n <namespace> deployment/<peer> > logs/<peer>.log`
+
+### Task 4: Collect metrics and build comparison
+
+From pod logs, extract `METRIC:` lines. Key metrics to compare:
+
+- **Cache hit rate** per scenario per stack
+- **p50/p95 latency** for peer fetches (same-building vs cross-building)
+- **Origin fallback rate** — how often did the system fail all the way to origin?
+- **Fallback event count** — `DHT_FALLBACK` events in coordinator stack, coordinator fallback events in DHT stack
+- **Recovery time** — after crash/restart, how quickly does the first peer-fetch succeed?
+
+Result naming convention: `<stack>_<scenario>_<timestamp>_<git-sha>.json`
+
+Example: `coordinator_locality-smoke_20260411T1830_bf3db98.json`
+
+### Task 5: Failure injection validation
+
+Before running the full 7-scenario suite, manually verify fault injection works:
+
+```bash
+# Kill coordinator in coordinator stack
+kubectl scale deployment/coordinator -n p2p-coordinator --replicas=0
+
+# Fetch should still work via DHT fallback
+curl -s http://localhost:7001/trigger-fetch/fallback-test-1 | python3 -m json.tool
+
+# Bring it back
+kubectl scale deployment/coordinator -n p2p-coordinator --replicas=1
+kubectl rollout status deployment/coordinator -n p2p-coordinator --timeout=60s
+```
+
+Repeat for DHT stack (kill dht-bootstrap instead).
 
 ### Exit Condition
 
-- [ ] Coordinator-primary stack is working in GKE and matches the local system qualitatively
+- [ ] All 7 scenarios run on both stacks in cloud
+- [ ] Metrics collected and comparison table/plots generated
+- [ ] Results match the expected behavior from local tests (qualitatively)
 
 ---
 
-## Phase 5: DHT Stack Bring-Up (Swarup Lead)
+## Phase 9: Final Joint Testing
 
-### Swarup
-
-- [ ] Update DHT stack manifests with final image URIs
-- [ ] Keep the current app-layer topology delay model enabled
-- [ ] Deploy:
-  - [ ] coordinator fallback service
-  - [ ] dht-bootstrap
-  - [ ] origin
-  - [ ] initial peers
-- [ ] Validate readiness of all DHT-stack pods
-- [ ] Run manual cloud validation:
-  - [ ] origin fetch works
-  - [ ] DHT lookup works
-  - [ ] same-building peer fetch works
-  - [ ] cross-building peer fetch works
-  - [ ] DHT crash fallback works
-
-### Tanish
-
-- [ ] Review DHT stack behavior relative to report claims
-- [ ] Cross-check fallback outputs against local expected behavior
-
-### Exit Condition
-
-- [ ] DHT-primary stack is working in GKE and matches the local system qualitatively
-
----
-
-## Phase 6: Cloud Result Collection MVP
-
-### Tanish
-
-- [ ] Define the MVP cloud result collection method
-- [ ] For initial cloud bring-up, collect:
-  - [ ] pod logs
-  - [ ] `/stats` outputs
-  - [ ] any JSON artifacts already available
-- [ ] Create a result naming convention by:
-  - [ ] architecture
-  - [ ] scenario
-  - [ ] timestamp
-  - [ ] git SHA
-
-### Swarup
-
-- [ ] Ensure pods expose the endpoints needed for result collection
-- [ ] Help verify log access and namespace separation
-
-### Exit Condition
-
-- [ ] Both stacks produce cloud-observable outputs that can be compared to local runs
-
----
-
-## Phase 7: Workload Runner Migration
-
-This is the first phase where work becomes more collaborative again.
-
-### Swarup
-
-- [ ] Adapt DHT-side workload execution path for Kubernetes
-- [ ] Define how DHT-side workload runs are launched in-cluster
-
-### Tanish
-
-- [ ] Adapt coordinator-side workload execution path for Kubernetes
-- [ ] Define how coordinator-side workload runs are launched in-cluster
-
-### Shared
-
-- [ ] Decide whether the runner is:
-  - [ ] a Kubernetes Job
-  - [ ] a manually executed pod/script for MVP
-- [ ] Preserve the same scenario names and semantics as local:
-  - [ ] locality
-  - [ ] burst
-  - [ ] independent churn
-  - [ ] correlated churn
-  - [ ] fallback/failure scenarios
-
-### Exit Condition
-
-- [ ] At least one scenario can be run in cloud without manual per-request curl commands
-
----
-
-## Phase 8: Cloud Failure Injection
-
-### Swarup
-
-- [ ] Lead DHT-side failure injection implementation
-- [ ] Validate:
-  - [ ] DHT crash
-  - [ ] DHT delay
-
-### Tanish
-
-- [ ] Lead coordinator-side failure injection implementation
-- [ ] Validate:
-  - [ ] coordinator crash
-  - [ ] coordinator delay
-
-### Shared
-
-- [ ] Decide whether partition injection is:
-  - [ ] required in MVP
-  - [ ] deferred until after crash/delay validation
-- [ ] Keep the first cloud failure injection simple and reproducible
-
-### Exit Condition
-
-- [ ] Both stacks support at least crash and delay fault experiments in cloud
-
----
-
-## Phase 9: Final Joint Testing Before Repeated Runs
-
-This is the first true integration/testing checkpoint after independent work.
-
-### Required Joint Tests
-
-- [ ] Coordinator locality smoke test in cloud
-- [ ] DHT locality smoke test in cloud
-- [ ] Coordinator fallback smoke/failure test in cloud
-- [ ] DHT fallback smoke/failure test in cloud
-- [ ] One workload scenario per stack in cloud
-- [ ] Compare cloud outputs to local expected behavior
-
-### Questions to Answer Before Proceeding
+After Tanish has cloud results, both teammates validate together:
 
 - [ ] Do warm-object fallback paths behave correctly in both architectures?
 - [ ] Do cold-object misses degrade to origin as expected?
-- [ ] Do cloud latencies preserve the intended same-building vs cross-building vs origin ordering under the app-layer model?
-- [ ] Are the metrics and logs sufficient for repeated runs?
-
-### Exit Condition
-
-- [ ] Both teammates agree the cloud MVP is correct and ready for repeated experiments
+- [ ] Does the latency ordering (same-building < cross-building < origin) hold?
+- [ ] Are the metrics sufficient for the final report?
+- [ ] Side-by-side comparison table is agreed on
 
 ---
 
 ## Phase 10: After MVP Validation
 
 Only start this after all phases above are complete.
-
-### Shared Later Work
 
 - [ ] Add Terraform for reproducible infra provisioning
 - [ ] Add GCS artifact export
@@ -360,27 +337,14 @@ Only start this after all phases above are complete.
 
 ## Coordination Checkpoints
 
-| # | Checkpoint | Owner | Unblocks |
-|---|------------|-------|----------|
-| 1 | GCP project, cluster, and registry ready | Swarup | Both can build/push/deploy |
-| 2 | Shared image tags and service naming finalized | Both | Stack manifests can be finalized |
-| 3 | Coordinator stack validated in GKE | Tanish | Coordinator-side cloud testing |
-| 4 | DHT stack validated in GKE | Swarup | DHT-side cloud testing |
-| 5 | Cloud result collection path defined | Tanish | Workload execution in cloud |
-| 6 | Both stacks pass manual cloud validation | Both | Repeated runs can begin later |
-
----
-
-## Recommended Immediate Execution Order
-
-1. Swarup sets up cluster + registry
-2. Tanish freezes env/config assumptions from local
-3. Both push their images
-4. Swarup finalizes shared base manifests
-5. Tanish deploys and validates coordinator stack
-6. Swarup deploys and validates DHT stack
-7. Both do final joint cloud validation
-8. Then move to workload jobs and repeated experiments
+| # | Checkpoint | Owner | Status |
+|---|------------|-------|--------|
+| 1 | GCP project, cluster, and registry ready | Swarup | done |
+| 2 | All 5 images built and pushed | Swarup | done |
+| 3 | Both stacks deployed and smoke-tested | Swarup | done |
+| 4 | Runner adapted for K8s | Tanish | not started |
+| 5 | All 7 scenarios run on both stacks | Tanish | not started |
+| 6 | Comparison table / final results | Both | not started |
 
 ---
 
@@ -390,3 +354,9 @@ Only start this after all phases above are complete.
 - Do **not** treat raw GCP latency as a replacement for the campus simulation model.
 - Do **not** start with repeated runs before manual cloud validation succeeds.
 - Do **not** mix both architectures in one test session unless namespaces, services, and result collection are clearly isolated.
+- The cluster costs ~$65/month. Tear down after evaluation is done:
+
+```bash
+gcloud container clusters delete resilientp2p-gke --zone us-central1-f --project resilientp2p-492916 --quiet
+gcloud artifacts repositories delete resilientp2p --location=us-central1 --project=resilientp2p-492916 --quiet
+```
