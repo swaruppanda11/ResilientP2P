@@ -1,0 +1,12 @@
+project_id             = "resilientp2p-492916"
+region                 = "us-central1"
+zone                   = "us-central1-f"
+cluster_name           = "resilientp2p-gke"
+artifact_registry_repo = "resilientp2p"
+results_bucket_name    = "resilientp2p-results"
+
+# Keep these aligned with cost limits.
+building_a_node_count  = 1
+building_b_node_count  = 1
+cluster_machine_type   = "e2-medium"
+
