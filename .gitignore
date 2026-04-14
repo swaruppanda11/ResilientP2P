@@ -12,7 +12,7 @@ p2p-coordinator/experiments/results-k8s-multi/
 p2p-dht/experiments/results-k8s-multi/
 
 # Aggregate outputs (regenerable from result data)
-results-aggregate/
+
 
 # Terraform local state
 .terraform/

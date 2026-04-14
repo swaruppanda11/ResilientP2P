@@ -1,0 +1,905 @@
+{
+  "coordinator": {
+    "Burst With Independent Churn": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 0.85,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 20,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 17,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 46.886261139640254,
+          "std": 4.136387267938397
+        },
+        "median": {
+          "mean": 0.554471998475492,
+          "std": 0.15133555813032262
+        },
+        "p95": {
+          "mean": 192.35350940376517,
+          "std": 12.46701008295964
+        },
+        "max": {
+          "mean": 216.68047420680523,
+          "std": 6.0932878008351254
+        }
+      },
+      "source_counts": {
+        "cache": {
+          "mean": 11,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 2,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 4,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "cache": {
+          "mean": 11534336,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 2097152,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 4194304,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.8823529411764706,
+        "std": 0.0
+      }
+    },
+    "Coordinator Failure Fallback Smoke Test": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 0,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 1514.694517342529,
+          "std": 8.617675754614178
+        },
+        "median": {
+          "mean": 2133.666446013376,
+          "std": 16.672842576202964
+        },
+        "p95": {
+          "mean": 2200.5169946770184,
+          "std": 14.347205674272129
+        },
+        "max": {
+          "mean": 2207.944833417423,
+          "std": 15.755134060126451
+        }
+      },
+      "source_counts": {
+        "origin": {
+          "mean": 2,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 1,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "origin": {
+          "mean": 2097152,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 1048576,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.3333333333333333,
+        "std": 0.0
+      }
+    },
+    "Coordinator Partition Fallback Test": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 0,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 1503.2022273361993,
+          "std": 7.50153867354478
+        },
+        "median": {
+          "mean": 2115.4797568102367,
+          "std": 23.059847254750565
+        },
+        "p95": {
+          "mean": 2192.948563066311,
+          "std": 9.985413411615838
+        },
+        "max": {
+          "mean": 2201.556208205875,
+          "std": 11.148326390994484
+        }
+      },
+      "source_counts": {
+        "origin": {
+          "mean": 2,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 1,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "origin": {
+          "mean": 2097152,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 1048576,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.3333333333333333,
+        "std": 0.0
+      }
+    },
+    "Coordinator Timeout Fallback Test": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 0,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 1377.5030847910482,
+          "std": 5.306663129703881
+        },
+        "median": {
+          "mean": 1317.3032329883426,
+          "std": 8.999544935005838
+        },
+        "p95": {
+          "mean": 2478.552047177218,
+          "std": 13.506379893207251
+        },
+        "max": {
+          "mean": 2607.579693198204,
+          "std": 15.592301198264895
+        }
+      },
+      "source_counts": {
+        "origin": {
+          "mean": 2,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 1,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "origin": {
+          "mean": 2097152,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 1048576,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.3333333333333333,
+        "std": 0.0
+      }
+    },
+    "Correlated Class Exit Churn": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 0.9090909090909091,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 22,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 20,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 2,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 40.75563797727227,
+          "std": 5.717514165060467
+        },
+        "median": {
+          "mean": 0.47750099329277873,
+          "std": 0.09676571765166245
+        },
+        "p95": {
+          "mean": 186.18612598511393,
+          "std": 22.52884462403769
+        },
+        "max": {
+          "mean": 232.14508501114324,
+          "std": 41.022191045272294
+        }
+      },
+      "source_counts": {
+        "cache": {
+          "mean": 14,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 2,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 4,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "cache": {
+          "mean": 14680064,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 2097152,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 4194304,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.9,
+        "std": 0.0
+      }
+    },
+    "Course Burst Workload": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 22,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 22,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 0,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 51.64606053995985,
+          "std": 2.8844070125960397
+        },
+        "median": {
+          "mean": 0.6195901019964367,
+          "std": 0.18222254888419726
+        },
+        "p95": {
+          "mean": 206.06715691712452,
+          "std": 6.536827103693335
+        },
+        "max": {
+          "mean": 229.92526518646628,
+          "std": 18.877782574313436
+        }
+      },
+      "source_counts": {
+        "cache": {
+          "mean": 14,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 4,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 4,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "cache": {
+          "mean": 14680064,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 4194304,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 4194304,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.8181818181818182,
+        "std": 0.0
+      }
+    },
+    "Explicit Locality Smoke Test": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 0,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 141.7158332633941,
+          "std": 5.632447246862999
+        },
+        "median": {
+          "mean": 136.07316860579886,
+          "std": 22.614075748326503
+        },
+        "p95": {
+          "mean": 202.73167003004346,
+          "std": 4.773328438746902
+        },
+        "max": {
+          "mean": 210.13817018829286,
+          "std": 6.86126254997721
+        }
+      },
+      "source_counts": {
+        "origin": {
+          "mean": 1,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 2,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "origin": {
+          "mean": 1048576,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 2097152,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.6666666666666666,
+        "std": 0.0
+      }
+    }
+  },
+  "dht": {
+    "Burst With Independent Churn": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 0.85,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 20,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 17,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 72.07327248008154,
+          "std": 2.927720171995939
+        },
+        "median": {
+          "mean": 72.6911090197973,
+          "std": 1.721800273089192
+        },
+        "p95": {
+          "mean": 183.13864650204775,
+          "std": 4.785950538072999
+        },
+        "max": {
+          "mean": 219.96657261624932,
+          "std": 20.789083495188322
+        }
+      },
+      "source_counts": {
+        "cache": {
+          "mean": 5,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 2,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 10,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "cache": {
+          "mean": 5242880,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 2097152,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 10485760,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.8823529411764706,
+        "std": 0.0
+      }
+    },
+    "Correlated Class Exit Churn": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 0.9090909090909091,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 22,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 20,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 2,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 156.10406365070958,
+          "std": 2.903874064226014
+        },
+        "median": {
+          "mean": 20.03353699692525,
+          "std": 1.660530277546355
+        },
+        "p95": {
+          "mean": 303.2299049559529,
+          "std": 7.776039216901086
+        },
+        "max": {
+          "mean": 2218.803687207401,
+          "std": 14.292647269025599
+        }
+      },
+      "source_counts": {
+        "cache": {
+          "mean": 10,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 3,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 7,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "cache": {
+          "mean": 10485760,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 3145728,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 7340032,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.85,
+        "std": 0.0
+      }
+    },
+    "Course Burst Workload": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 22,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 22,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 0,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 57.830115242607214,
+          "std": 1.2479991640124568
+        },
+        "median": {
+          "mean": 41.17637020535767,
+          "std": 3.8942471512187025
+        },
+        "p95": {
+          "mean": 193.01899261190556,
+          "std": 5.478823674054748
+        },
+        "max": {
+          "mean": 212.84574958262965,
+          "std": 7.683514312491612
+        }
+      },
+      "source_counts": {
+        "cache": {
+          "mean": 9,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 4,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 9,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "cache": {
+          "mean": 9437184,
+          "std": 0.0
+        },
+        "origin": {
+          "mean": 4194304,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 9437184,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.8181818181818182,
+        "std": 0.0
+      }
+    },
+    "DHT Failure Fallback Smoke Test": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 0,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 185.0267849241694,
+          "std": 38.788726577277714
+        },
+        "median": {
+          "mean": 197.39204079378396,
+          "std": 7.599317549117386
+        },
+        "p95": {
+          "mean": 249.55156797426753,
+          "std": 97.39760665211914
+        },
+        "max": {
+          "mean": 255.34707099432126,
+          "std": 107.68329239983184
+        }
+      },
+      "source_counts": {
+        "origin": {
+          "mean": 2,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 1,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "origin": {
+          "mean": 2097152,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 1048576,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.3333333333333333,
+        "std": 0.0
+      }
+    },
+    "DHT Partition Fallback Test": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 0,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 336.52252986406285,
+          "std": 4.327558693928562
+        },
+        "median": {
+          "mean": 212.97861819621176,
+          "std": 17.892780906769445
+        },
+        "p95": {
+          "mean": 645.8633518533316,
+          "std": 2.687968939837709
+        },
+        "max": {
+          "mean": 693.9616555930115,
+          "std": 4.10669306886881
+        }
+      },
+      "source_counts": {
+        "origin": {
+          "mean": 2,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 1,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "origin": {
+          "mean": 2097152,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 1048576,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.3333333333333333,
+        "std": 0.0
+      }
+    },
+    "DHT Timeout Fallback Test": {
+      "num_runs": 4,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 0,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 3658.2404420914827,
+          "std": 348.0554282823658
+        },
+        "median": {
+          "mean": 684.8249787581153,
+          "std": 13.841657787634212
+        },
+        "p95": {
+          "mean": 9140.469934124849,
+          "std": 937.477971113772
+        },
+        "max": {
+          "mean": 10079.986040276708,
+          "std": 1040.2010964448555
+        }
+      },
+      "source_counts": {
+        "origin": {
+          "mean": 3,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "origin": {
+          "mean": 3145728,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.0,
+        "std": 0.0
+      }
+    },
+    "Explicit Locality Smoke Test": {
+      "num_runs": 5,
+      "success_rate": {
+        "mean": 1.0,
+        "std": 0.0
+      },
+      "fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "successful_fetch_count": {
+        "mean": 3,
+        "std": 0.0
+      },
+      "failed_fetch_count": {
+        "mean": 0,
+        "std": 0.0
+      },
+      "service_latency_ms": {
+        "mean": {
+          "mean": 127.80128726735711,
+          "std": 9.454056122167822
+        },
+        "median": {
+          "mean": 107.2317375917919,
+          "std": 8.855866037263715
+        },
+        "p95": {
+          "mean": 195.6169493298512,
+          "std": 10.968222772970952
+        },
+        "max": {
+          "mean": 205.43752841185778,
+          "std": 12.07768602569306
+        }
+      },
+      "source_counts": {
+        "origin": {
+          "mean": 1,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 2,
+          "std": 0.0
+        }
+      },
+      "bytes_by_source": {
+        "origin": {
+          "mean": 1048576,
+          "std": 0.0
+        },
+        "peer": {
+          "mean": 2097152,
+          "std": 0.0
+        }
+      },
+      "bandwidth_reduction": {
+        "mean": 0.6666666666666666,
+        "std": 0.0
+      }
+    }
+  },
+  "meta": {
+    "coordinator_runs": 5,
+    "dht_runs": 5,
+    "multi_dir": "results-k8s-multi"
+  }
+}
