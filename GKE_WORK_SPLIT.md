@@ -360,16 +360,66 @@ Joint-validation output:
 
 ---
 
-## Phase 10: After MVP Validation
+## Phase 10: Repeated Runs and Aggregation
 
-Only start this after all phases above are complete.
+Completed Phase 10 deliverables now present in the repo:
 
-- [ ] Add Terraform for reproducible infra provisioning
-- [ ] Add GCS artifact export
-- [ ] Add repeated-run automation
-- [ ] Add aggregate summary scripts / plots
-- [ ] Add optional Prometheus/Grafana
-- [ ] Add optional richer partition experiments
+- [x] Repeated-run execution script added:
+  - [x] [run-k8s-suite.sh](scripts/run-k8s-suite.sh)
+- [x] Aggregate summary script added:
+  - [x] [aggregate-results.py](scripts/aggregate-results.py)
+- [x] Plot generation script added:
+  - [x] [plot-results.py](scripts/plot-results.py)
+- [x] GCS export script added:
+  - [x] [export-to-gcs.sh](scripts/export-to-gcs.sh)
+- [x] Terraform baseline for reproducible cloud infra added:
+  - [x] [infra/terraform/main.tf](infra/terraform/main.tf)
+  - [x] [infra/terraform/README.md](infra/terraform/README.md)
+- [x] Aggregate repeated-run outputs generated:
+  - [x] [aggregate-summary.json](results-aggregate/aggregate-summary.json)
+  - [x] [aggregate-summary.md](results-aggregate/aggregate-summary.md)
+  - [x] [PHASE10_REPORT_HANDOFF.md](results-aggregate/PHASE10_REPORT_HANDOFF.md)
+  - [x] plot artifacts under [results-aggregate/plots](results-aggregate/plots)
+
+Phase 10 execution summary:
+
+- Coordinator stack aggregate uses **5 runs**
+- DHT stack aggregate uses **5 runs**
+- Core workload aggregation is complete
+- Failure-injection aggregation is complete
+- Report-ready markdown tables and PNG plots are present
+
+Interpretation notes:
+
+- The aggregate results make sense and are consistent with the earlier single-run cloud behavior.
+- Source-count means are effectively deterministic across runs, which is why many standard deviations are `0.0`.
+- Bandwidth-reduction values are stable and high in the core workloads:
+  - `66.7%` for locality smoke
+  - `81.8%` for course burst
+  - `88.2%` for independent churn
+  - `90.0%` coordinator / `85.0%` DHT for correlated churn
+- Coordinator-primary remains lower-latency in the churn-heavy workloads.
+- DHT timeout remains the weakest case:
+  - all requests go to `origin`
+  - mean and p95 latencies are much higher than all other scenarios
+
+Practical note:
+
+- Raw `results-k8s-multi/` directories are intentionally not versioned in git (see `.gitignore`), so the committed aggregate outputs are the durable summary artifacts in the repository.
+
+---
+
+## Future Works
+
+These items are not required to claim the current cloud evaluation, but they are still open beyond the completed Phase 10 aggregation work.
+
+- [ ] Validate the Terraform baseline end-to-end as the primary provisioning path, not just as checked-in IaC
+- [ ] Integrate Kubernetes application deployment more tightly with Terraform or a higher-level deployment workflow
+- [ ] Perform and document a full GCS export/archive run if long-term artifact storage is required for submission
+- [ ] Add optional Prometheus/Grafana monitoring
+- [ ] Add optional richer partition experiments beyond the current failure-injection set
+- [ ] Extend repeated-run analysis with confidence intervals and additional statistical tests in report-facing summaries
+- [ ] Add stricter archival conventions for raw multi-run artifacts if the full raw dataset needs to be shared outside GCS
 
 ---
 
@@ -383,7 +433,7 @@ Only start this after all phases above are complete.
 | 4 | Runner adapted for K8s | Tanish | done |
 | 5 | All 7 scenarios run on both stacks | Tanish | done |
 | 6 | Single-run cloud comparison table / results closeout | Both | done |
-| 7 | Repeated-run automation and aggregate outputs | Both | pending (Phase 10) |
+| 7 | Repeated-run automation and aggregate outputs | Both | done |
 
 ---
 
@@ -393,7 +443,7 @@ Only start this after all phases above are complete.
 - Do **not** treat raw GCP latency as a replacement for the campus simulation model.
 - Do **not** start with repeated runs before manual cloud validation succeeds.
 - Do **not** mix both architectures in one test session unless namespaces, services, and result collection are clearly isolated.
-- The current cloud comparison is based on a single full run per stack. Final report-quality aggregate values still require repeated runs.
+- Single-run cloud comparison is preserved for traceability, but repeated-run aggregate outputs now exist under `results-aggregate/`.
 - The cluster costs ~$65/month. Tear down after evaluation is done:
 
 ```bash
