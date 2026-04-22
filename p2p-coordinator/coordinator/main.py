@@ -1,6 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 
@@ -12,6 +13,7 @@ from common.schemas import (
     HealthResponse,
     HeartbeatRequest,
     HeartbeatResponse,
+    InvalidateResponse,
     LookupResponse,
     PublishRequest,
     PublishResponse,
@@ -113,9 +115,13 @@ async def publish(req: PublishRequest):
     )
 
 @app.get("/lookup/{object_id}", response_model=LookupResponse)
-async def lookup(object_id: str, location_id: str = Query(...)):
-    providers = store.get_providers(object_id, location_id)
-    metadata = store.object_metadata.get(object_id)
+async def lookup(
+    object_id: str,
+    location_id: str = Query(...),
+    version: str | None = Query(default=None),
+):
+    providers = store.get_providers(object_id, location_id, version=version)
+    metadata = store.get_object_metadata(object_id, version=version)
     log_event(
         logger,
         logging.INFO,
@@ -129,6 +135,91 @@ async def lookup(object_id: str, location_id: str = Query(...)):
         providers=providers,
         metadata=metadata
     )
+
+
+@app.post("/invalidate/{object_id}", response_model=InvalidateResponse)
+async def invalidate(object_id: str):
+    provider_urls, removed_provider_entries = store.invalidate_object(object_id)
+    notified_peers = 0
+    async with httpx.AsyncClient(timeout=1.0) as client:
+        for provider_url in provider_urls:
+            try:
+                resp = await client.post(f"{provider_url}/invalidate/{object_id}")
+                resp.raise_for_status()
+                notified_peers += 1
+            except Exception as exc:
+                log_event(
+                    logger,
+                    logging.WARNING,
+                    "peer_invalidation_failed",
+                    object_id=object_id,
+                    provider=provider_url,
+                    error=str(exc),
+                )
+
+    log_event(
+        logger,
+        logging.INFO,
+        "object_invalidated",
+        object_id=object_id,
+        removed_provider_entries=removed_provider_entries,
+        notified_peers=notified_peers,
+    )
+    return InvalidateResponse(
+        status="invalidated",
+        object_id=object_id,
+        removed_provider_entries=removed_provider_entries,
+        notified_peers=notified_peers,
+    )
+
+
+@app.post("/invalidate-prefix")
+async def invalidate_prefix(prefix: str = Query(...)):
+    provider_urls, removed_provider_entries, object_ids = store.invalidate_prefix(prefix)
+    notified_peers = 0
+    async with httpx.AsyncClient(timeout=1.0) as client:
+        for provider_url in provider_urls:
+            try:
+                resp = await client.post(
+                    f"{provider_url}/invalidate-prefix",
+                    params={"prefix": prefix},
+                )
+                resp.raise_for_status()
+                notified_peers += 1
+            except Exception as exc:
+                log_event(
+                    logger,
+                    logging.WARNING,
+                    "peer_prefix_invalidation_failed",
+                    prefix=prefix,
+                    provider=provider_url,
+                    error=str(exc),
+                )
+
+    log_event(
+        logger,
+        logging.INFO,
+        "object_prefix_invalidated",
+        prefix=prefix,
+        object_count=len(object_ids),
+        removed_provider_entries=removed_provider_entries,
+        notified_peers=notified_peers,
+    )
+    return {
+        "status": "invalidated",
+        "prefix": prefix,
+        "object_ids": object_ids,
+        "removed_provider_entries": removed_provider_entries,
+        "notified_peers": notified_peers,
+    }
+
+
+@app.post("/revalidate/{object_id}", response_model=InvalidateResponse)
+async def revalidate(object_id: str):
+    # The coordinator does not fetch content itself. Revalidation means clearing
+    # stale discovery/cache state so the next requester refetches from origin.
+    return await invalidate(object_id)
+
 
 @app.post(
     "/heartbeat",

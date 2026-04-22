@@ -1,0 +1,15 @@
+.git
+.gitignore
+.gcloudignore
+**/__pycache__/**
+**/*.pyc
+**/*.log
+**/*.err.log
+demo-outputs/**
+results-aggregate/**
+p2p-coordinator/experiments/results/**
+p2p-coordinator/experiments/results-k8s/**
+p2p-coordinator/experiments/results-k8s-multi/**
+p2p-dht/experiments/results/**
+p2p-dht/experiments/results-k8s/**
+p2p-dht/experiments/results-k8s-multi/**

@@ -1,5 +1,5 @@
 from typing import Dict, List, Set
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from common.schemas import PeerInfo, ObjectMetadata, PeerLoadStats, RegisterRequest
 
 
@@ -31,6 +31,8 @@ class Store:
         self.index: Dict[str, Set[str]] = {}
         # Maps object_id -> ObjectMetadata (to store checksum etc)
         self.object_metadata: Dict[str, ObjectMetadata] = {}
+        # Maps object_id -> peer_id -> version, so lookups can avoid old-version providers.
+        self.object_provider_versions: Dict[str, Dict[str, str]] = {}
         # Maps peer_id -> lightweight load stats used by provider selection
         self.peer_loads: Dict[str, PeerLoadStats] = {}
         self.max_providers_per_lookup = max_providers_per_lookup
@@ -64,15 +66,18 @@ class Store:
 
         obj_id = metadata.object_id
         existing_metadata = self.object_metadata.get(obj_id)
-        if existing_metadata and existing_metadata != metadata:
+        if existing_metadata and self._metadata_conflicts(existing_metadata, metadata):
             raise InvalidPublishError(
                 f"Object '{obj_id}' metadata conflicts with existing published metadata"
             )
         if obj_id not in self.index:
             self.index[obj_id] = set()
-            self.object_metadata[obj_id] = metadata
+        if obj_id not in self.object_provider_versions:
+            self.object_provider_versions[obj_id] = {}
+        self.object_metadata[obj_id] = metadata
             
         self.index[obj_id].add(peer_id)
+        self.object_provider_versions[obj_id][peer_id] = metadata.version
 
     def report_transfer(self, peer_id: str, object_id: str, bytes_served: int) -> PeerLoadStats:
         if peer_id not in self.peers:
@@ -91,11 +96,25 @@ class Store:
         self.peer_loads[peer_id] = updated
         return updated
 
-    def get_providers(self, object_id: str, requesting_location: str) -> List[str]:
+    def get_providers(
+        self,
+        object_id: str,
+        requesting_location: str,
+        version: str | None = None,
+    ) -> List[str]:
         if object_id not in self.index:
             return []
+        metadata = self.get_object_metadata(object_id, version=version)
+        if metadata is None:
+            return []
 
-        peer_ids = self.index[object_id]
+        requested_version = version or metadata.version
+        peer_versions = self.object_provider_versions.get(object_id, {})
+        peer_ids = [
+            p_id
+            for p_id in self.index[object_id]
+            if peer_versions.get(p_id, metadata.version) == requested_version
+        ]
         providers = []
         
         for p_id in peer_ids:
@@ -105,6 +124,43 @@ class Store:
         providers.sort(key=lambda peer: self._provider_sort_key(peer, requesting_location))
 
         return [p.url for p in providers[: self.max_providers_per_lookup]]
+
+    def get_object_metadata(self, object_id: str, version: str | None = None):
+        metadata = self.object_metadata.get(object_id)
+        if metadata is not None and self._metadata_expired(metadata):
+            self._remove_object(object_id)
+            return None
+        if version is not None and metadata is not None and metadata.version != version:
+            return None
+        return metadata
+
+    def invalidate_object(self, object_id: str):
+        peer_ids = set(self.index.get(object_id, set()))
+        provider_urls = sorted(
+            self.peers[p_id].url
+            for p_id in peer_ids
+            if p_id in self.peers
+        )
+        removed_provider_entries = len(peer_ids)
+        self._remove_object(object_id)
+        return provider_urls, removed_provider_entries
+
+    def invalidate_prefix(self, prefix: str):
+        object_ids = [
+            object_id
+            for object_id in self.object_metadata.keys()
+            if object_id.startswith(prefix)
+        ]
+        provider_urls = set()
+        removed_provider_entries = 0
+        for object_id in object_ids:
+            peer_ids = set(self.index.get(object_id, set()))
+            removed_provider_entries += len(peer_ids)
+            for peer_id in peer_ids:
+                if peer_id in self.peers:
+                    provider_urls.add(self.peers[peer_id].url)
+            self._remove_object(object_id)
+        return sorted(provider_urls), removed_provider_entries, object_ids
 
     def get_stats(self) -> Dict[str, int]:
         return {
@@ -133,6 +189,30 @@ class Store:
             peer.peer_id,
         )
 
+    def _metadata_conflicts(self, existing: ObjectMetadata, incoming: ObjectMetadata) -> bool:
+        if existing.version != incoming.version:
+            return False
+        return (
+            existing.checksum != incoming.checksum
+            or existing.size_bytes != incoming.size_bytes
+            or existing.cacheability != incoming.cacheability
+        )
+
+    def _metadata_expired(self, metadata: ObjectMetadata) -> bool:
+        if metadata.cacheability == "immutable":
+            return False
+        if metadata.expires_at is None:
+            return metadata.cacheability == "dynamic"
+        expires_at = metadata.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) >= expires_at
+
+    def _remove_object(self, object_id: str) -> None:
+        self.index.pop(object_id, None)
+        self.object_metadata.pop(object_id, None)
+        self.object_provider_versions.pop(object_id, None)
+
     def cleanup(self, timeout_seconds: int = 30):
         now = datetime.now()
         threshold = now - timedelta(seconds=timeout_seconds)
@@ -149,7 +229,13 @@ class Store:
             for obj_id in list(self.index.keys()):
                 if p_id in self.index[obj_id]:
                     self.index[obj_id].remove(p_id)
+                    self.object_provider_versions.get(obj_id, {}).pop(p_id, None)
                 if not self.index[obj_id]:
                     del self.index[obj_id]
+                    self.object_provider_versions.pop(obj_id, None)
                     if obj_id in self.object_metadata:
                         del self.object_metadata[obj_id]
+
+        for obj_id, metadata in list(self.object_metadata.items()):
+            if self._metadata_expired(metadata):
+                self._remove_object(obj_id)

@@ -49,6 +49,22 @@ Primary source files:
 3. DHT-primary exhibits higher tail latency under correlated churn and timeout-fallback conditions.
 4. DHT timeout path remains the weakest reliability/latency case and should be reported as a known limitation.
 
+## Follow-On Work From Report Limitations
+
+The report also identifies three future-work areas beyond the completed cloud evaluation. These should be treated as the next product-hardening phase, not as part of the Phase 10 evaluation claim.
+
+| Order | Workstream | Difficulty | Primary validation target |
+|---:|---|---|---|
+| 1 | Dynamic object invalidation | Medium | Warm object, invalidate it, then verify the next peer request does not serve stale cache data |
+| 2 | Peer authentication and access control | Medium-Hard | Unauthorized peers cannot register, publish, lookup restricted objects, or fetch restricted bytes |
+| 3 | Malicious-peer resilience | Hard | Bad providers are detected, deprioritized/quarantined, and healthy providers continue serving |
+
+Recommended first implementation target:
+
+- Start with dynamic invalidation because it improves cache correctness without requiring a full security model.
+- Keep existing immutable-object behavior as the default so the current evaluation remains reproducible.
+- Add authentication before peer reputation, because malicious-peer tracking requires stable peer identity.
+
 ## Plot artifacts
 
 - `results-aggregate/report-images/source-distribution.png`

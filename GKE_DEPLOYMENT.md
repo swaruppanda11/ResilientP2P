@@ -522,7 +522,99 @@ After the manual GKE bring-up works, the next work items should be:
 
 ---
 
-## 15. Teardown
+## 15. Post-Report Hardening Deployment Notes
+
+These notes cover the next workstreams identified after the report: dynamic invalidation, peer authentication/access control, and malicious-peer resilience. They are not required for reproducing the completed evaluation, but they affect future Kubernetes configuration and validation.
+
+The implementation checklist is maintained in [POST_REPORT_HARDENING_ROADMAP.md](POST_REPORT_HARDENING_ROADMAP.md).
+
+### 15.1 Dynamic Object Invalidation
+
+Expected deployment/config changes:
+
+- Add environment variables for cache consistency behavior:
+  - `DEFAULT_CACHEABILITY=immutable|ttl|dynamic`
+  - `DEFAULT_MAX_AGE_SECONDS`
+  - `ENABLE_INVALIDATION_API=true|false`
+- Add coordinator endpoints for invalidation and revalidation.
+- Add workload scenarios that warm an object, invalidate it, and verify the next peer request does not serve stale data.
+- Keep `immutable` as the default so current report workloads remain reproducible.
+- Current implementation includes `POST /invalidate/{object_id}`, `POST /invalidate-prefix`, and `POST /revalidate/{object_id}`. The local and GKE workload files include dynamic invalidation, TTL expiry, and prefix invalidation scenarios for both coordinator-primary and DHT-primary stacks.
+
+Kubernetes validation checklist:
+
+- [x] Invalidate a warmed object through the coordinator service path in deterministic validation and GKE validation.
+- [x] Verify peer cache stats/behavior show eviction or stale-entry rejection in deterministic validation and GKE validation.
+- [x] Verify coordinator lookup no longer returns stale providers in deterministic validation and GKE validation.
+- [x] Verify DHT lookup ignores provider records with stale version/expiry metadata in deterministic validation and GKE validation.
+- [x] Re-run the new scenarios on GKE after rebuilding/pushing updated images.
+
+GKE validation result:
+
+- Image tag validated: `f01f039`
+- Coordinator-primary hardening scenarios: `Dynamic Object Explicit Invalidation`, `TTL Expiry Revalidation`, and `Prefix Invalidation Smoke Test` all passed with `success_rate=1.0`
+- DHT-primary hardening scenarios: `Dynamic Object Explicit Invalidation`, `TTL Expiry Revalidation`, and `Prefix Invalidation Smoke Test` all passed with `success_rate=1.0`
+- Result directories: `p2p-coordinator/experiments/results-k8s-hardening/` and `p2p-dht/experiments/results-k8s-hardening/`
+
+### 15.2 Peer Authentication and Access Control
+
+Expected deployment/config changes:
+
+- Add `AUTH_MODE`:
+  - `none` for current experiments
+  - `shared_token` for first secured test
+  - later `certificate` or `oidc`
+- Add Kubernetes Secrets for shared-token or certificate material.
+- Mount or inject secrets into coordinator, peer, and DHT bootstrap pods as needed.
+- Add object access metadata such as `visibility` and `allowed_groups`.
+
+Kubernetes validation checklist:
+
+- [ ] With `AUTH_MODE=none`, existing smoke tests still pass.
+- [ ] With `AUTH_MODE=shared_token`, requests without token are rejected.
+- [ ] Authenticated peers can register, publish, lookup, and transfer content.
+- [ ] Unauthorized peers cannot receive restricted provider lists or object bytes.
+
+Example Secret placeholder:
+
+```bash
+kubectl create secret generic p2p-auth \
+  -n p2p-coordinator \
+  --from-literal=shared-token='replace-with-dev-token'
+
+kubectl create secret generic p2p-auth \
+  -n p2p-dht \
+  --from-literal=shared-token='replace-with-dev-token'
+```
+
+### 15.3 Malicious-Peer Resilience
+
+Expected deployment/config changes:
+
+- Add optional fault-injection mode for test peers so a peer can intentionally:
+  - advertise an object it does not have
+  - serve corrupted bytes
+  - publish conflicting metadata
+- Add coordinator/peer metrics for:
+  - checksum mismatches
+  - metadata conflicts
+  - provider fetch failures
+  - suspect/quarantined peer counts
+- Add configurable thresholds:
+  - `SUSPECT_THRESHOLD`
+  - `QUARANTINE_THRESHOLD`
+  - `QUARANTINE_TTL_SECONDS`
+
+Kubernetes validation checklist:
+
+- [ ] A bad-content peer is detected by checksum validation.
+- [ ] Repeated bad behavior moves a peer to `quarantined`.
+- [ ] Quarantined peers are excluded from provider results.
+- [ ] Requesters retry healthy providers or origin after rejecting a bad provider.
+
+---
+
+## 16. Teardown
 
 Delete cluster when done:
 
@@ -544,7 +636,7 @@ gcloud run services delete resilientp2p-origin --region us-east1 --quiet
 
 ---
 
-## 16. Key Design Corrections from the Earlier Version
+## 17. Key Design Corrections from the Earlier Version
 
 This corrected guide differs from the earlier version in these important ways:
 

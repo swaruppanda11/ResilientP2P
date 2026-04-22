@@ -35,11 +35,29 @@
       "name": "Explicit Locality Smoke Test",
       "description": "Simple deterministic run for sanity checking coordinator lookup and peer transfer.",
       "steps": [
-        { "action": "fetch", "peer": "peer-a1", "object_id": "lecture-1-video" },
-        { "action": "wait", "seconds": 1 },
-        { "action": "fetch", "peer": "peer-a2", "object_id": "lecture-1-video" },
-        { "action": "wait", "seconds": 1 },
-        { "action": "fetch", "peer": "peer-b1", "object_id": "lecture-1-video" }
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "lecture-1-video"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "lecture-1-video"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "lecture-1-video"
+        }
       ]
     },
     {
@@ -49,11 +67,23 @@
       "requests": [
         {
           "kind": "course_burst",
-          "peers": ["peer-a1", "peer-a2"],
+          "peers": [
+            "peer-a1",
+            "peer-a2"
+          ],
           "objects": [
-            { "id": "csci5673-assignment-1", "weight": 5 },
-            { "id": "csci5673-lecture-5", "weight": 3 },
-            { "id": "csci5673-reading-2", "weight": 2 }
+            {
+              "id": "csci5673-assignment-1",
+              "weight": 5
+            },
+            {
+              "id": "csci5673-lecture-5",
+              "weight": 3
+            },
+            {
+              "id": "csci5673-reading-2",
+              "weight": 2
+            }
           ],
           "start_seconds": 0,
           "duration_seconds": 8,
@@ -61,10 +91,18 @@
         },
         {
           "kind": "random_uniform",
-          "peers": ["peer-b1"],
+          "peers": [
+            "peer-b1"
+          ],
           "objects": [
-            { "id": "campus-news", "weight": 2 },
-            { "id": "csci5673-assignment-1", "weight": 1 }
+            {
+              "id": "campus-news",
+              "weight": 2
+            },
+            {
+              "id": "csci5673-assignment-1",
+              "weight": 1
+            }
           ],
           "start_seconds": 4,
           "end_seconds": 16,
@@ -79,11 +117,24 @@
       "requests": [
         {
           "kind": "course_burst",
-          "peers": ["peer-a1", "peer-a2", "peer-b1"],
+          "peers": [
+            "peer-a1",
+            "peer-a2",
+            "peer-b1"
+          ],
           "objects": [
-            { "id": "midterm-review", "weight": 4 },
-            { "id": "practice-set", "weight": 3 },
-            { "id": "formula-sheet", "weight": 1 }
+            {
+              "id": "midterm-review",
+              "weight": 4
+            },
+            {
+              "id": "practice-set",
+              "weight": 3
+            },
+            {
+              "id": "formula-sheet",
+              "weight": 1
+            }
           ],
           "start_seconds": 0,
           "duration_seconds": 14,
@@ -93,7 +144,10 @@
       "churn": [
         {
           "kind": "independent",
-          "peers": ["peer-a2", "peer-b1"],
+          "peers": [
+            "peer-a2",
+            "peer-b1"
+          ],
           "count": 1,
           "start_seconds": 5,
           "end_seconds": 9,
@@ -108,10 +162,19 @@
       "requests": [
         {
           "kind": "course_burst",
-          "peers": ["peer-a1", "peer-a2"],
+          "peers": [
+            "peer-a1",
+            "peer-a2"
+          ],
           "objects": [
-            { "id": "project-demo", "weight": 4 },
-            { "id": "lab-starter", "weight": 2 }
+            {
+              "id": "project-demo",
+              "weight": 4
+            },
+            {
+              "id": "lab-starter",
+              "weight": 2
+            }
           ],
           "start_seconds": 0,
           "duration_seconds": 10,
@@ -119,10 +182,20 @@
         },
         {
           "kind": "random_uniform",
-          "peers": ["peer-a1", "peer-a2", "peer-b1"],
+          "peers": [
+            "peer-a1",
+            "peer-a2",
+            "peer-b1"
+          ],
           "objects": [
-            { "id": "project-demo", "weight": 3 },
-            { "id": "department-calendar", "weight": 1 }
+            {
+              "id": "project-demo",
+              "weight": 3
+            },
+            {
+              "id": "department-calendar",
+              "weight": 1
+            }
           ],
           "start_seconds": 10,
           "end_seconds": 22,
@@ -135,7 +208,10 @@
           "events": [
             {
               "at_seconds": 11,
-              "peers": ["peer-a1", "peer-a2"],
+              "peers": [
+                "peer-a1",
+                "peer-a2"
+              ],
               "downtime_seconds": 6
             }
           ]
@@ -146,45 +222,246 @@
       "name": "Coordinator Failure Fallback Smoke Test",
       "description": "Warm an object through the coordinator path, stop the coordinator, then verify DHT fallback for warm and cold requests.",
       "steps": [
-        { "action": "fetch", "peer": "peer-a1", "object_id": "fallback-smoke-1" },
-        { "action": "wait", "seconds": 1 },
-        { "action": "kill", "service": "coordinator" },
-        { "action": "wait", "seconds": 2 },
-        { "action": "fetch", "peer": "peer-b1", "object_id": "fallback-smoke-1" },
-        { "action": "fetch", "peer": "peer-b1", "object_id": "fallback-new-object-1" },
-        { "action": "wait", "seconds": 1 },
-        { "action": "restart", "service": "coordinator", "wait_after_seconds": 8 },
-        { "action": "wait", "seconds": 11 }
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "fallback-smoke-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "kill",
+          "service": "coordinator"
+        },
+        {
+          "action": "wait",
+          "seconds": 2
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "fallback-smoke-1"
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "fallback-new-object-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "restart",
+          "service": "coordinator",
+          "wait_after_seconds": 8
+        },
+        {
+          "action": "wait",
+          "seconds": 11
+        }
       ]
     },
     {
       "name": "Coordinator Partition Fallback Test",
       "description": "Inject full packet loss on the coordinator pod to force DHT fallback under network partition rather than clean crash.",
       "steps": [
-        { "action": "fetch", "peer": "peer-a1", "object_id": "partition-fallback-1" },
-        { "action": "wait", "seconds": 4 },
-        { "action": "disconnect", "service": "coordinator" },
-        { "action": "wait", "seconds": 2 },
-        { "action": "fetch", "peer": "peer-b1", "object_id": "partition-fallback-1" },
-        { "action": "fetch", "peer": "peer-b1", "object_id": "partition-new-object-1" },
-        { "action": "wait", "seconds": 1 },
-        { "action": "connect", "service": "coordinator", "wait_after_seconds": 3 },
-        { "action": "wait", "seconds": 11 }
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "partition-fallback-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 4
+        },
+        {
+          "action": "disconnect",
+          "service": "coordinator"
+        },
+        {
+          "action": "wait",
+          "seconds": 2
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "partition-fallback-1"
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "partition-new-object-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "connect",
+          "service": "coordinator",
+          "wait_after_seconds": 3
+        },
+        {
+          "action": "wait",
+          "seconds": 11
+        }
       ]
     },
     {
       "name": "Coordinator Timeout Fallback Test",
       "description": "Inject high network delay on the coordinator so coordinator lookups exceed the timeout budget and fall back to DHT.",
       "steps": [
-        { "action": "fetch", "peer": "peer-a1", "object_id": "timeout-fallback-1" },
-        { "action": "wait", "seconds": 1 },
-        { "action": "delay", "service": "coordinator", "delay_ms": 1200 },
-        { "action": "wait", "seconds": 1 },
-        { "action": "fetch", "peer": "peer-b1", "object_id": "timeout-fallback-1" },
-        { "action": "fetch", "peer": "peer-b1", "object_id": "timeout-new-object-1" },
-        { "action": "wait", "seconds": 1 },
-        { "action": "clear_delay", "service": "coordinator" },
-        { "action": "wait", "seconds": 2 }
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "timeout-fallback-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "delay",
+          "service": "coordinator",
+          "delay_ms": 1200
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "timeout-fallback-1"
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "timeout-new-object-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "clear_delay",
+          "service": "coordinator"
+        },
+        {
+          "action": "wait",
+          "seconds": 2
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Object Explicit Invalidation",
+      "description": "Warm a mutable object, invalidate it, then request a newer version and verify the stale peer copy is not served.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "dynamic-syllabus",
+          "version": "1",
+          "cacheability": "immutable"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "dynamic-syllabus",
+          "version": "1",
+          "cacheability": "immutable"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "invalidate",
+          "object_id": "dynamic-syllabus"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "dynamic-syllabus",
+          "version": "2",
+          "cacheability": "immutable"
+        }
+      ]
+    },
+    {
+      "name": "TTL Expiry Revalidation",
+      "description": "Cache a short-lived object and verify that the next request after expiry refetches instead of using a stale provider.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "ttl-announcement",
+          "version": "1",
+          "cacheability": "ttl",
+          "max_age_seconds": 1
+        },
+        {
+          "action": "wait",
+          "seconds": 4
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "ttl-announcement",
+          "version": "1",
+          "cacheability": "ttl",
+          "max_age_seconds": 1
+        }
+      ]
+    },
+    {
+      "name": "Prefix Invalidation Smoke Test",
+      "description": "Invalidate a prefix and verify a subsequent request for a matching object refetches from origin.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "mutable-course-unit-1",
+          "version": "1",
+          "cacheability": "immutable"
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "mutable-course-unit-2",
+          "version": "1",
+          "cacheability": "immutable"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "invalidate_prefix",
+          "prefix": "mutable-course-"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "mutable-course-unit-1",
+          "version": "2",
+          "cacheability": "immutable"
+        }
       ]
     }
   ]

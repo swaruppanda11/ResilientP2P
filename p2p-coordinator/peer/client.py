@@ -14,6 +14,8 @@ reflect discovery differences rather than content availability differences.
 """
 
 import asyncio
+import hashlib
+import json
 import httpx
 import time
 import logging
@@ -121,16 +123,28 @@ class PeerClient:
     async def republish_all(self) -> None:
         """Re-announce all cached objects to the DHT (churn recovery)."""
         for object_id in list(self.cache.storage.keys()):
-            await self._announce_dht(object_id)
+            metadata = self.cache.get_metadata(object_id)
+            if metadata is not None:
+                await self._announce_dht(metadata)
 
     # ------------------------------------------------------------------
     # Core fetch pipeline
     # ------------------------------------------------------------------
 
-    async def fetch_object(self, object_id: str) -> Optional[FetchResult]:
+    async def fetch_object(
+        self,
+        object_id: str,
+        version: Optional[str] = None,
+        cacheability: Optional[str] = None,
+        max_age_seconds: Optional[int] = None,
+    ) -> Optional[FetchResult]:
         start_time = time.perf_counter()
 
         # 1. Check local cache
+        if version:
+            cached_metadata = self.cache.get_metadata(object_id)
+            if cached_metadata is not None and cached_metadata.version != version:
+                self.cache.invalidate(object_id)
         cached_data = self.cache.get(object_id)
         if cached_data is not None:
             log_event(
@@ -178,7 +192,10 @@ class PeerClient:
         try:
             resp = await self.http_client.get(
                 f"{self.coordinator_url}/lookup/{object_id}",
-                params={"location_id": self.location_id},
+                params={
+                    "location_id": self.location_id,
+                    **({"version": version} if version else {}),
+                },
                 timeout=self.settings.lookup_timeout_seconds,
             )
             resp.raise_for_status()
@@ -216,7 +233,7 @@ class PeerClient:
         dht_urls: List[str] = []
 
         if coordinator_failed or not providers:
-            dht_providers, dht_failed = await self._dht_lookup(object_id, start_time)
+            dht_providers, dht_failed = await self._dht_lookup(object_id, start_time, version)
             if not dht_failed and dht_providers:
                 dht_fallback_used = True
                 dht_urls = self._select_dht_providers(dht_providers)
@@ -242,12 +259,41 @@ class PeerClient:
                     timeout=self.settings.lookup_timeout_seconds,
                 )
                 p_resp.raise_for_status()
-                data_hex = p_resp.json()["content_hex"]
+                peer_payload = p_resp.json()
+                data_hex = peer_payload["content_hex"]
                 data = bytes.fromhex(data_hex)
 
                 # Store in cache and publish
                 if metadata is None:
-                    metadata = self.cache.get_metadata(object_id)
+                    peer_metadata = peer_payload.get("metadata")
+                    if peer_metadata:
+                        metadata = ObjectMetadata(**peer_metadata)
+                    else:
+                        metadata = self.cache.get_metadata(object_id)
+                if version and metadata and metadata.version != version:
+                    log_event(
+                        self.logger,
+                        logging.WARNING,
+                        "peer_fetch_version_mismatch",
+                        peer_id=self.peer_id,
+                        object_id=object_id,
+                        expected_version=version,
+                        provider=peer_url,
+                        provider_version=metadata.version,
+                    )
+                    metadata = None
+                    continue
+                if metadata and hashlib.sha256(data).hexdigest() != metadata.checksum:
+                    log_event(
+                        self.logger,
+                        logging.WARNING,
+                        "peer_fetch_checksum_mismatch",
+                        peer_id=self.peer_id,
+                        object_id=object_id,
+                        provider=peer_url,
+                    )
+                    metadata = None
+                    continue
                 if metadata:
                     write_result = self.cache.put(metadata, data)
                     self._log_cache_write_metrics(object_id, write_result)
@@ -290,14 +336,27 @@ class PeerClient:
 
         # 5. Fallback to Origin
         try:
-            o_resp = await self.http_client.get(f"{self.origin_url}/object/{object_id}")
+            origin_params = {
+                **({"version": version} if version else {}),
+                **({"cacheability": cacheability} if cacheability else {}),
+                **({"max_age_seconds": max_age_seconds} if max_age_seconds is not None else {}),
+            }
+            o_resp = await self.http_client.get(
+                f"{self.origin_url}/object/{object_id}",
+                params=origin_params,
+            )
             o_resp.raise_for_status()
             res = o_resp.json()
             data = bytes.fromhex(res["content_hex"])
             meta = ObjectMetadata(
                 object_id=object_id,
                 checksum=res["checksum"],
-                size_bytes=res["size"]
+                size_bytes=res["size"],
+                version=res.get("version", "1"),
+                cacheability=res.get("cacheability", "immutable"),
+                max_age_seconds=res.get("max_age_seconds"),
+                expires_at=res.get("expires_at"),
+                etag=res.get("etag"),
             )
             write_result = self.cache.put(meta, data)
             self._log_cache_write_metrics(object_id, write_result)
@@ -341,7 +400,7 @@ class PeerClient:
     # ------------------------------------------------------------------
 
     async def _dht_lookup(
-        self, object_id: str, start_time: float
+        self, object_id: str, start_time: float, version: Optional[str] = None
     ) -> Tuple[List[Dict], bool]:
         """
         Perform a DHT lookup with a per-request timeout.
@@ -351,7 +410,7 @@ class PeerClient:
         """
         try:
             providers = await asyncio.wait_for(
-                self.dht_node.lookup(object_id),
+                self.dht_node.lookup(object_id, version=version),
                 timeout=self.settings.dht_lookup_timeout_seconds,
             )
             log_metric(MetricEvent(
@@ -407,14 +466,17 @@ class PeerClient:
         )
         return [p["url"] for p in sorted_providers[: self.settings.max_providers_per_lookup]]
 
-    async def _announce_dht(self, object_id: str) -> None:
+    async def _announce_dht(self, metadata: ObjectMetadata) -> None:
         """Announce cached object to DHT so the fallback index stays current."""
         peer_url = f"http://{self.host}:{self.port}"
         announced = await self.dht_node.announce_with_retry(
-            object_id=object_id,
+            object_id=metadata.object_id,
             peer_id=self.peer_id,
             peer_url=peer_url,
             location_id=self.location_id,
+            version=metadata.version,
+            cacheability=metadata.cacheability,
+            expires_at=metadata.expires_at.isoformat() if metadata.expires_at else None,
         )
         if not announced:
             log_event(
@@ -422,25 +484,31 @@ class PeerClient:
                 logging.WARNING,
                 "dht_announce_failed_after_retries",
                 peer_id=self.peer_id,
-                object_id=object_id,
+                object_id=metadata.object_id,
             )
 
     def _schedule_post_store_updates(self, metadata: ObjectMetadata) -> None:
         asyncio.create_task(self._post_store_updates(metadata))
 
     async def _post_store_updates(self, metadata: ObjectMetadata) -> None:
-        await self._announce_dht(metadata.object_id)
+        await self._announce_dht(metadata)
         await self.publish(metadata)
 
     async def publish(self, metadata: ObjectMetadata):
         req = PublishRequest(peer_id=self.peer_id, metadata=metadata)
         try:
-            resp = await self.http_client.post(f"{self.coordinator_url}/publish", json=req.dict())
+            resp = await self.http_client.post(
+                f"{self.coordinator_url}/publish",
+                json=json.loads(req.json()),
+            )
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 await self._re_register_with_coordinator(reason="publish_unknown_peer")
-                retry_resp = await self.http_client.post(f"{self.coordinator_url}/publish", json=req.dict())
+                retry_resp = await self.http_client.post(
+                    f"{self.coordinator_url}/publish",
+                    json=json.loads(req.json()),
+                )
                 retry_resp.raise_for_status()
                 return
             log_event(

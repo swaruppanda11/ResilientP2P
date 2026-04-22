@@ -14,6 +14,7 @@ you would use a CRDT or vector-clocked provider set.
 import asyncio
 import json
 import logging
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from kademlia.network import Server
@@ -112,7 +113,16 @@ class DHTNode:
                 await asyncio.sleep(retry_delay_seconds)
         return False
 
-    async def announce(self, object_id: str, peer_id: str, peer_url: str, location_id: str) -> bool:
+    async def announce(
+        self,
+        object_id: str,
+        peer_id: str,
+        peer_url: str,
+        location_id: str,
+        version: str = "1",
+        cacheability: str = "immutable",
+        expires_at: Optional[str] = None,
+    ) -> bool:
         """
         Announce that this peer holds a cached copy of object_id.
 
@@ -138,7 +148,16 @@ class DHTNode:
 
             # Remove any stale entry for this peer then append the fresh one.
             providers = [p for p in providers if p.get("peer_id") != peer_id]
-            providers.append({"peer_id": peer_id, "url": peer_url, "location_id": location_id})
+            providers.append(
+                {
+                    "peer_id": peer_id,
+                    "url": peer_url,
+                    "location_id": location_id,
+                    "version": version,
+                    "cacheability": cacheability,
+                    "expires_at": expires_at,
+                }
+            )
 
             await asyncio.wait_for(
                 self.server.set(object_id, json.dumps(providers)),
@@ -162,6 +181,9 @@ class DHTNode:
         peer_id: str,
         peer_url: str,
         location_id: str,
+        version: str = "1",
+        cacheability: str = "immutable",
+        expires_at: Optional[str] = None,
         attempts: int = 3,
         retry_delay_seconds: float = 0.2,
     ) -> bool:
@@ -170,14 +192,22 @@ class DHTNode:
         short-lived DHT convergence delays during experiments.
         """
         for attempt in range(1, attempts + 1):
-            ok = await self.announce(object_id, peer_id, peer_url, location_id)
+            ok = await self.announce(
+                object_id,
+                peer_id,
+                peer_url,
+                location_id,
+                version=version,
+                cacheability=cacheability,
+                expires_at=expires_at,
+            )
             if ok:
                 return True
             if attempt < attempts:
                 await asyncio.sleep(retry_delay_seconds)
         return False
 
-    async def lookup(self, object_id: str) -> List[Dict]:
+    async def lookup(self, object_id: str, version: Optional[str] = None) -> List[Dict]:
         """
         Return all known providers for object_id.
 
@@ -191,10 +221,24 @@ class DHTNode:
             try:
                 parsed = json.loads(raw)
                 if isinstance(parsed, list):
-                    return parsed
+                    return [
+                        p
+                        for p in parsed
+                        if not self._provider_expired(p)
+                        and (version is None or p.get("version", "1") == version)
+                    ]
             except (json.JSONDecodeError, TypeError):
                 pass
         return []
+
+    async def invalidate_object(self, object_id: str) -> None:
+        try:
+            await asyncio.wait_for(
+                self.server.set(object_id, json.dumps([])),
+                timeout=ANNOUNCE_OPERATION_TIMEOUT_SECONDS,
+            )
+        except Exception:
+            pass
 
     async def remove_peer(self, peer_id: str, object_ids: List[str]) -> None:
         """
@@ -228,3 +272,17 @@ class DHTNode:
         if self._started:
             self.server.stop()
             self._started = False
+
+    def _provider_expired(self, provider: Dict) -> bool:
+        if provider.get("cacheability") == "immutable":
+            return False
+        raw_expires_at = provider.get("expires_at")
+        if not raw_expires_at:
+            return provider.get("cacheability") == "dynamic"
+        try:
+            expires_at = datetime.fromisoformat(raw_expires_at)
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            return datetime.now(timezone.utc) >= expires_at
+        except (TypeError, ValueError):
+            return True

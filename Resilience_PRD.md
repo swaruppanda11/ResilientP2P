@@ -2,7 +2,7 @@
 ## Product Requirements Document
 
 **Project Name:** Resilience
-**Version:** 1.3
+**Version:** 1.4
 **Date:** April 2026
 **Authors:** Tanish Praveen Nagrani, Swarup Panda
 **Duration:** 6 weeks (Sprint-based delivery)
@@ -187,7 +187,8 @@ Both configurations will be evaluated on:
 - **Storage**: In-process `OrderedDict` (LRU); persists for the lifetime of the container
 - **Eviction**: LRU when byte capacity exceeded (default 10MB per peer in Docker; configurable via `CACHE_CAPACITY_BYTES`)
 - **Content validation**: SHA-256 checksum verified on every `put`; mismatches raise an error
-- **Cache consistency**: Best-effort (content is immutable per `object_id` by design)
+- **Cache consistency (current)**: Best-effort; content is treated as immutable per `object_id`
+- **Cache consistency (planned)**: Add explicit invalidation for dynamic or mutable objects using object versions, TTLs, and origin/coordinator invalidation messages
 
 #### 6.5 Peer Selection & Load Balancing
 - **Geographic proximity**: Peers sorted by `location_id` match (same building = lower latency tier)
@@ -206,6 +207,31 @@ Both configurations will be evaluated on:
 - **Per-peer HTTP stats**: `GET /stats` returns cache hit/miss/eviction counts, cache byte utilization
 - **Coordinator stats**: `GET /stats` returns peer count, object count, provider entries, per-peer upload totals
 - **Experiment results**: JSON files written to `experiments/results/` per scenario
+
+#### 6.8 Post-Report Hardening Features (Planned)
+
+The cloud evaluation intentionally scoped the prototype to benign peers and static or versioned cacheable objects. The report identifies three follow-on hardening areas that are required before the system can be treated as a realistic campus deployment candidate.
+
+**Feature A: Explicit invalidation for dynamic web objects**
+- Add cache metadata fields for `version`, `expires_at`, `max_age_seconds`, and `cacheability`
+- Support coordinator-side invalidation by `object_id`, object prefix, or version
+- Support peer-side invalidation that evicts stale local cache entries and removes provider advertisements
+- Propagate invalidation to both discovery planes: coordinator index and DHT provider records
+- Preserve current immutable-object behavior as the default for existing experiments
+
+**Feature B: Peer authentication and access control**
+- Require peers to authenticate before registration, publication, lookup, and transfer-report operations
+- Add a configurable campus trust model using development tokens first, then certificate or university identity integration later
+- Restrict provider advertisements to authenticated peers
+- Add access-control checks for object classes when object metadata marks content as restricted
+- Keep authentication optional in local development to avoid breaking existing smoke tests
+
+**Feature C: Malicious-peer resilience**
+- Distinguish accidental corruption from malicious or inconsistent behavior
+- Track checksum mismatches, failed peer fetches, inconsistent metadata publications, and abnormal provider behavior per peer
+- Add peer quarantine or deprioritization when a peer repeatedly serves invalid content or advertises inconsistent metadata
+- Add signed advertisements or origin-attested metadata as a later step
+- Treat Sybil resistance as out of scope until basic authentication and signed metadata exist
 
 ---
 
@@ -431,8 +457,10 @@ ResilientP2P/
 - **Churn patterns**: Independent random churn and correlated class-exit churn (modeled in `workload.json`)
 - **Network**: All containers on single Docker bridge network; WAN latency simulated via origin `?delay=0.1s` parameter
 - **Peer capacity**: 10MB cache per peer (Docker default; configurable)
-- **Trust**: Benign peers assumed (no Byzantine adversaries)
-- **Content**: Immutable per `object_id` (SHA-256 checksum enforced on cache write)
+- **Trust (current)**: Benign peers assumed for the completed report evaluation; no Byzantine adversaries
+- **Trust (planned)**: Future hardening will add peer authentication, access control, and malicious-peer handling
+- **Content (current)**: Immutable per `object_id` (SHA-256 checksum enforced on cache write)
+- **Content (planned)**: Future hardening will add explicit invalidation for dynamic or mutable web objects
 
 ---
 
@@ -446,6 +474,9 @@ ResilientP2P/
 | Churn correlation analysis | Complex to model | Medium | ✅ Resolved | Correlated churn modeled in `workload.json` via `kind: correlated` |
 | Config B DHT fallback missing | Incomplete comparison | High | ✅ Resolved | DHT node, bootstrap, and fallback path added to coordinator stack |
 | Branch divergence | Integration pain | Medium | **In progress** | Merging `tanish` + `DHT` branches |
+| Dynamic object staleness | Incorrect content served after origin update | Medium | Planned | Add TTL/version metadata and explicit invalidation propagation |
+| Unauthenticated peers | Unauthorized clients can publish providers or fetch restricted objects | High | Planned | Add peer identity, token/certificate validation, and access-control checks |
+| Malicious provider advertisements | False metadata or invalid content can poison discovery/cache behavior | High | Planned | Add signed/attested metadata, peer failure counters, quarantine, and provider deprioritization |
 
 ---
 
@@ -569,7 +600,105 @@ Both hybrid configurations were smoke-tested locally via Docker Compose to verif
 
 ---
 
-## 17. References
+## 17. Post-Report Hardening Roadmap
+
+This roadmap converts the report's future-work limitations into implementation-ready work. These items are not required to reproduce the completed cloud evaluation, but they are required for a stronger follow-on system.
+
+The active step-by-step checklist for this phase is maintained in [`POST_REPORT_HARDENING_ROADMAP.md`](POST_REPORT_HARDENING_ROADMAP.md).
+
+### 17.1 Recommended Build Order
+
+| Order | Workstream | Difficulty | Rationale |
+|---:|---|---|---|
+| 1 | Dynamic object invalidation | Medium | Extends cache correctness while touching metadata, cache, coordinator, DHT, and tests in a controlled way |
+| 2 | Peer authentication and access control | Medium-Hard | Establishes campus trust boundary before implementing adversarial defenses |
+| 3 | Malicious-peer resilience | Hard | Depends on identity, observable peer behavior, metadata integrity, and policy decisions |
+
+### 17.2 Workstream A: Dynamic Object Invalidation
+
+**Status:** Implemented. The coordinator and DHT stacks now support version/cacheability metadata, TTL expiry, single-object invalidation, prefix invalidation, revalidation-by-invalidation, peer-side stale eviction, DHT provider expiry/version filtering, and deterministic validation through `scripts/validate-dynamic-invalidation.py`.
+
+**Problem:** The current prototype assumes content is static or versioned by `object_id`. This is acceptable for lecture videos or immutable course files, but not for dynamic web objects that can change while retaining the same logical URL.
+
+**Product requirements:**
+- Add metadata fields: `version`, `cacheability`, `max_age_seconds`, `expires_at`, and optionally `etag`
+- Support object classes: `immutable`, `ttl`, and `dynamic`
+- Add coordinator invalidation APIs: `POST /invalidate/{object_id}`, `POST /invalidate-prefix`, and optional `POST /revalidate/{object_id}`
+- Add peer invalidation behavior: evict stale local cache entries, stop serving invalidated objects, and remove provider advertisements
+- Add DHT invalidation behavior: include metadata version in provider records, ignore stale versions, and expire provider records using TTL or timestamp checks
+- Preserve current immutable-object behavior as the default for existing experiments
+
+**Acceptance criteria:**
+- A warmed object can be invalidated and is no longer served from local cache or peer cache
+- After invalidation, the next request goes to origin and republishes the new version
+- Coordinator and DHT lookup results do not return stale providers for invalidated versions
+- Existing immutable-object experiments still pass without changing scenario definitions
+
+**Suggested tests:**
+- `invalidate_warm_object`: warm on `peer-a1`, invalidate, fetch from `peer-a2`, expect `source=origin` [implemented in workload scenarios]
+- `ttl_expiry`: warm with short TTL, wait past expiry, fetch again, expect revalidation/origin [implemented in workload scenarios]
+- `version_mismatch`: publish v1, origin updates to v2, requester rejects v1 peer provider [implemented in fetch path validation]
+- `dht_stale_provider`: stale DHT provider exists but version mismatch prevents peer fetch [implemented in deterministic validation]
+
+### 17.3 Workstream B: Peer Authentication and Access Control
+
+**Problem:** The current prototype assumes benign peers in a controlled campus experiment. A real campus deployment needs a way to decide which clients are allowed to register, publish, discover providers, and fetch restricted content.
+
+**Product requirements:**
+- Add configurable authentication modes: `none`, `shared_token`, and later `certificate` or `oidc`
+- Require authenticated peer identity for coordinator registration, publication, lookup, heartbeat, transfer reports, peer object transfer, and DHT provider advertisements
+- Add peer identity fields: `peer_id`, `principal`, `groups` or `roles`, and `issuer`
+- Add object access metadata: `visibility=public|campus|course|restricted` and optional `allowed_groups`
+- Enforce access checks before returning provider lists and before serving object bytes
+- Keep authentication optional in local development to avoid breaking existing smoke tests
+
+**Acceptance criteria:**
+- Unauthenticated registration and publication are rejected when auth is enabled
+- Authenticated peers can complete the existing locality smoke test
+- A peer without the required group cannot fetch restricted object content
+- Auth can be disabled for reproducible evaluation runs
+
+**Suggested tests:**
+- `auth_required_register`: missing token returns 401
+- `auth_required_publish`: invalid token cannot advertise content
+- `restricted_lookup`: unauthorized peer receives no provider list
+- `restricted_transfer`: unauthorized peer cannot fetch bytes even if it knows provider URL
+- `dev_mode_backwards_compat`: `AUTH_MODE=none` preserves current experiment behavior
+
+### 17.4 Workstream C: Malicious-Peer Resilience
+
+**Problem:** SHA-256 validation detects corruption only when the requester already has correct metadata. It does not prevent a malicious peer from advertising false metadata, claiming to host objects it does not have, or repeatedly serving invalid data.
+
+**Product requirements:**
+- Add peer-behavior counters for checksum mismatches, failed peer fetches, inconsistent metadata publications, repeated unavailable-provider responses, and suspicious version regressions
+- Add provider reputation states: `healthy`, `suspect`, and `quarantined`
+- Change peer selection to deprioritize suspect peers and exclude quarantined peers
+- Add coordinator-side metadata conflict handling that rejects conflicting checksum/size/version claims for the same object version
+- Add optional signed metadata where the origin signs object metadata and requesters verify signatures before accepting provider records
+
+**Acceptance criteria:**
+- A peer serving content that fails checksum validation is marked suspect
+- Repeated invalid responses quarantine a peer and remove it from provider results
+- Conflicting metadata publication is rejected and recorded
+- Healthy peers continue serving normally while malicious peers are deprioritized
+
+**Suggested tests:**
+- `bad_content_peer`: peer serves wrong bytes, requester rejects and tries another provider
+- `false_advertisement`: peer advertises object it does not have, provider score decreases
+- `metadata_conflict`: coordinator rejects conflicting checksum for same object version
+- `quarantine_threshold`: repeated bad behavior excludes peer from lookups
+- `healthy_peer_recovery`: once bad provider is excluded, requester succeeds through another peer or origin
+
+### 17.5 Dependency Notes
+
+- Dynamic invalidation can be implemented before authentication because it is primarily a correctness feature.
+- Authentication should come before malicious-peer resilience because peer reputation is meaningless without stable identity.
+- Signed metadata can be implemented after basic authentication, since it requires key distribution and verification policy.
+- Sybil resistance is intentionally deferred until authentication and signed advertisements exist.
+
+---
+
+## 18. References
 
 [1] L. Zhang, F. Zhou, A. Mislove, and R. Sundaram. "Maygh: Building a CDN from client web browsers." EuroSys 2013.
 [2] S. Iyer, A. Rowstron, and P. Druschel. "Squirrel: A decentralized peer-to-peer web cache." PODC 2002.
@@ -580,5 +709,5 @@ Both hybrid configurations were smoke-tested locally via Docker Compose to verif
 ---
 
 **Document Status:** Active
-**Last Updated:** April 1, 2026
-**Next Review:** End of Week 5 (evaluation complete)
+**Last Updated:** April 21, 2026
+**Next Review:** Before implementing Post-Report Hardening Workstream A

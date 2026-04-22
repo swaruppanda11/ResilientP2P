@@ -96,7 +96,45 @@ async def get_object(object_id: str, requester_location_id: str = Query(...)):
     )
     # Keep peer-to-peer serving independent from coordinator accounting.
     asyncio.create_task(client.report_transfer(object_id, len(data)))
-    return {"content_hex": data.hex()}
+    metadata = cache.get_metadata(object_id)
+    return {
+        "content_hex": data.hex(),
+        "metadata": metadata.dict() if metadata else None,
+    }
+
+
+@app.post("/invalidate/{object_id}")
+async def invalidate_object(object_id: str):
+    removed = cache.invalidate(object_id)
+    await dht_node.remove_peer(settings.peer_id, [object_id])
+    log_event(
+        logger,
+        logging.INFO,
+        "cache_invalidated",
+        peer_id=settings.peer_id,
+        object_id=object_id,
+        removed=removed,
+    )
+    return {"status": "invalidated", "object_id": object_id, "removed": removed}
+
+
+@app.post("/invalidate-prefix")
+async def invalidate_prefix(prefix: str = Query(...)):
+    removed_object_ids = cache.invalidate_prefix(prefix)
+    await dht_node.remove_peer(settings.peer_id, removed_object_ids)
+    log_event(
+        logger,
+        logging.INFO,
+        "cache_prefix_invalidated",
+        peer_id=settings.peer_id,
+        prefix=prefix,
+        removed_object_count=len(removed_object_ids),
+    )
+    return {
+        "status": "invalidated",
+        "prefix": prefix,
+        "removed_object_ids": removed_object_ids,
+    }
 
 
 @app.post("/suicide")
@@ -107,8 +145,18 @@ async def suicide():
 
 
 @app.get("/trigger-fetch/{object_id}", response_model=PeerFetchResponse)
-async def trigger_fetch(object_id: str):
-    result = await client.fetch_object(object_id)
+async def trigger_fetch(
+    object_id: str,
+    version: str | None = Query(default=None),
+    cacheability: str | None = Query(default=None),
+    max_age_seconds: int | None = Query(default=None),
+):
+    result = await client.fetch_object(
+        object_id,
+        version=version,
+        cacheability=cacheability,
+        max_age_seconds=max_age_seconds,
+    )
     if result:
         return PeerFetchResponse(
             status="success",

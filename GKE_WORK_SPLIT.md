@@ -423,6 +423,117 @@ These items are not required to claim the current cloud evaluation, but they are
 
 ---
 
+## Phase 11: Post-Report Cache Correctness and Security Hardening
+
+Phase 11 converts the report's future-work limitations into implementation work. This phase should be done incrementally and should preserve the existing cloud evaluation behavior by default.
+
+Detailed step-by-step implementation notes are tracked in [POST_REPORT_HARDENING_ROADMAP.md](POST_REPORT_HARDENING_ROADMAP.md).
+
+### Recommended Order
+
+| Order | Workstream | Difficulty | Primary Risk | Status |
+|---:|---|---|---|---|
+| 1 | Dynamic object invalidation | Medium | Stale cache/provider state across coordinator and DHT | Complete |
+| 2 | Peer authentication and access control | Medium-Hard | Breaking current local/GKE smoke tests | Planned |
+| 3 | Malicious-peer resilience | Hard | Reputation requires stable identity and careful false-positive handling | Planned |
+
+### Phase 11A: Dynamic Object Invalidation
+
+Goal: support mutable/dynamic objects without serving stale peer-cached content.
+
+- [x] Extend `ObjectMetadata` in both stacks with version/cacheability fields:
+  - [x] `version`
+  - [x] `cacheability` (`immutable`, `ttl`, `dynamic`)
+  - [x] `max_age_seconds`
+  - [x] `expires_at`
+  - [x] optional `etag`
+- [x] Update peer caches to reject or evict expired/stale entries before serving `/get-object/{object_id}`
+- [x] Add coordinator invalidation endpoints:
+  - [x] `POST /invalidate/{object_id}`
+  - [x] `POST /invalidate-prefix`
+  - [x] optional `POST /revalidate/{object_id}`
+- [x] Propagate invalidation to coordinator provider index and peer/DHT provider records
+- [x] Update DHT provider descriptors to include object version and expiry metadata
+- [x] Add tests/scenarios:
+  - [x] warm object, invalidate, next peer request returns `source=origin`
+  - [x] short TTL expires, next peer request revalidates/refetches
+  - [x] stale DHT provider ignored because version mismatches requested version
+  - [x] prefix invalidation clears matching mutable object groups
+
+Exit condition:
+
+- [x] Existing immutable workloads still pass unchanged by default because new metadata fields are backwards-compatible
+- [x] Dynamic invalidation scenario proves stale peer data is not served through deterministic validation and GKE hardening runs for both hybrid stacks
+
+### Phase 11B: Peer Authentication and Access Control
+
+Goal: restrict discovery and transfer operations to authenticated campus peers.
+
+- [ ] Add `AUTH_MODE` config with:
+  - [ ] `none` for current local/GKE experiments
+  - [ ] `shared_token` for first implementation
+  - [ ] future `certificate` or `oidc`
+- [ ] Add auth middleware or dependency to coordinator and peer FastAPI apps
+- [ ] Require authenticated identity for:
+  - [ ] peer registration
+  - [ ] heartbeat
+  - [ ] content publication
+  - [ ] lookup
+  - [ ] transfer report
+  - [ ] peer object fetch
+- [ ] Add object access metadata:
+  - [ ] `visibility`
+  - [ ] `allowed_groups`
+- [ ] Enforce access checks before returning providers and before serving content bytes
+- [ ] Add Kubernetes Secret support for demo tokens/certs
+- [ ] Add tests:
+  - [ ] missing token is rejected
+  - [ ] invalid token is rejected
+  - [ ] authorized peer can run locality smoke test
+  - [ ] unauthorized peer cannot fetch restricted object
+
+Exit condition:
+
+- [ ] `AUTH_MODE=none` preserves current experiments
+- [ ] `AUTH_MODE=shared_token` protects registration, lookup, publication, and peer transfer paths
+
+### Phase 11C: Malicious-Peer Resilience
+
+Goal: detect and reduce the impact of peers that advertise false metadata or serve invalid content.
+
+- [ ] Add peer behavior counters:
+  - [ ] checksum mismatch count
+  - [ ] failed peer fetch count
+  - [ ] inconsistent metadata publication count
+  - [ ] unavailable provider count
+- [ ] Add provider reputation states:
+  - [ ] `healthy`
+  - [ ] `suspect`
+  - [ ] `quarantined`
+- [ ] Update coordinator provider selection to exclude quarantined peers and deprioritize suspect peers
+- [ ] Update peer fetch pipeline to try alternate candidates after invalid content or unavailable provider
+- [ ] Reject conflicting metadata claims for the same object version
+- [ ] Add optional signed metadata as a later subphase
+- [ ] Add tests:
+  - [ ] bad-content peer is detected
+  - [ ] repeated bad peer is quarantined
+  - [ ] requester retries healthy provider after bad provider fails
+  - [ ] conflicting metadata publication is rejected
+
+Exit condition:
+
+- [ ] Bad peers no longer poison lookup results indefinitely
+- [ ] Healthy peers remain usable while suspect/quarantined peers are deprioritized or excluded
+
+### Phase 11 Documentation Outputs
+
+- [ ] Update `Resilience_PRD.md` acceptance criteria as each workstream lands
+- [ ] Update `GKE_DEPLOYMENT.md` with required Secrets/config for auth
+- [ ] Add new workload scenarios for invalidation/auth/malicious-peer testing
+- [ ] Add result summaries under a new `results-hardening/` directory if cloud validation is repeated
+
+---
+
 ## Coordination Checkpoints
 
 | # | Checkpoint | Owner | Status |

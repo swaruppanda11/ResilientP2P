@@ -286,6 +286,12 @@ class ExperimentRunner:
             return await self._execute_delay(event, actual_started_seconds)
         if event.action == "clear_delay":
             return await self._execute_clear_delay(event, actual_started_seconds)
+        if event.action == "invalidate":
+            return await self._execute_invalidate(event, client, actual_started_seconds)
+        if event.action == "invalidate_prefix":
+            return await self._execute_invalidate_prefix(event, client, actual_started_seconds)
+        if event.action == "revalidate":
+            return await self._execute_revalidate(event, client, actual_started_seconds)
         if event.action == "sleep":
             await asyncio.sleep(float(event.payload["seconds"]))
             return {
@@ -305,12 +311,17 @@ class ExperimentRunner:
         peer_id = event.payload["peer"]
         object_id = event.payload["object_id"]
         peer_url = self.peer_map[peer_id]["url"]
+        query_params = {
+            key: event.payload[key]
+            for key in ("version", "cacheability", "max_age_seconds")
+            if key in event.payload
+        }
         url = f"{peer_url}/trigger-fetch/{object_id}"
         print(f"[*] t={actual_started_seconds:.2f}s fetch {object_id} via {peer_id}")
 
         started = time.perf_counter()
         try:
-            response = await client.get(url)
+            response = await client.get(url, params=query_params)
             response.raise_for_status()
             payload = response.json()
             observed_latency_ms = (time.perf_counter() - started) * 1000
@@ -327,6 +338,7 @@ class ExperimentRunner:
                 "candidate_count": payload.get("candidate_count", 0),
                 "service_latency_ms": payload.get("latency_ms", 0.0),
                 "size": payload.get("size", 0),
+                "request_params": query_params,
             }
         except Exception as exc:
             observed_latency_ms = (time.perf_counter() - started) * 1000
@@ -344,7 +356,70 @@ class ExperimentRunner:
                 "service_latency_ms": 0.0,
                 "size": 0,
                 "error": str(exc),
+                "request_params": query_params,
             }
+
+    async def _execute_invalidate(
+        self,
+        event: Event,
+        client: httpx.AsyncClient,
+        actual_started_seconds: float,
+    ) -> Dict[str, Any]:
+        object_id = event.payload["object_id"]
+        print(f"[!] t={actual_started_seconds:.2f}s invalidate {object_id}")
+        coordinator_url = self.spec.get("coordinator_url", "http://localhost:8000")
+        response = await client.post(f"{coordinator_url}/invalidate/{object_id}")
+        response.raise_for_status()
+        return {
+            "action": "invalidate",
+            "object_id": object_id,
+            "scheduled_at_seconds": event.at_seconds,
+            "actual_started_seconds": actual_started_seconds,
+            "status": "issued",
+            "response": response.json(),
+        }
+
+    async def _execute_invalidate_prefix(
+        self,
+        event: Event,
+        client: httpx.AsyncClient,
+        actual_started_seconds: float,
+    ) -> Dict[str, Any]:
+        prefix = event.payload["prefix"]
+        print(f"[!] t={actual_started_seconds:.2f}s invalidate prefix {prefix}")
+        response = await client.post(
+            f"{self.spec.get('coordinator_url', 'http://localhost:8000')}/invalidate-prefix",
+            params={"prefix": prefix},
+        )
+        response.raise_for_status()
+        return {
+            "action": "invalidate_prefix",
+            "prefix": prefix,
+            "scheduled_at_seconds": event.at_seconds,
+            "actual_started_seconds": actual_started_seconds,
+            "status": "issued",
+            "response": response.json(),
+        }
+
+    async def _execute_revalidate(
+        self,
+        event: Event,
+        client: httpx.AsyncClient,
+        actual_started_seconds: float,
+    ) -> Dict[str, Any]:
+        object_id = event.payload["object_id"]
+        print(f"[!] t={actual_started_seconds:.2f}s revalidate {object_id}")
+        coordinator_url = self.spec.get("coordinator_url", "http://localhost:8000")
+        response = await client.post(f"{coordinator_url}/revalidate/{object_id}")
+        response.raise_for_status()
+        return {
+            "action": "revalidate",
+            "object_id": object_id,
+            "scheduled_at_seconds": event.at_seconds,
+            "actual_started_seconds": actual_started_seconds,
+            "status": "issued",
+            "response": response.json(),
+        }
 
     async def _execute_kill(
         self,
@@ -838,6 +913,9 @@ class ExperimentRunner:
             "restart": 1,
             "connect": 1,
             "clear_delay": 1,
+            "invalidate": 1,
+            "invalidate_prefix": 1,
+            "revalidate": 1,
             "fetch": 2,
             "sleep": 3,
         }

@@ -6,6 +6,18 @@ class ObjectMetadata(BaseModel):
     object_id: str
     checksum: str  # SHA-256 hash
     size_bytes: int
+    version: str = "1"
+    cacheability: str = "immutable"  # immutable | ttl | dynamic
+    max_age_seconds: Optional[int] = None
+    expires_at: Optional[datetime] = None
+    etag: Optional[str] = None
+
+
+class InvalidateResponse(BaseModel):
+    status: str
+    object_id: str
+    removed_provider_entries: int = 0
+    notified_peers: int = 0
 
 class PeerInfo(BaseModel):
     peer_id: str

@@ -1,0 +1,71 @@
+substitutions:
+  _REGISTRY: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p
+  _TAG: manual
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - p2p-coordinator/coordinator/Dockerfile
+      - -t
+      - ${_REGISTRY}/coordinator:${_TAG}
+      - -t
+      - ${_REGISTRY}/coordinator:v1
+      - p2p-coordinator
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - p2p-coordinator/peer/Dockerfile
+      - -t
+      - ${_REGISTRY}/coord-peer:${_TAG}
+      - -t
+      - ${_REGISTRY}/coord-peer:v1
+      - p2p-coordinator
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - p2p-coordinator/origin/Dockerfile
+      - -t
+      - ${_REGISTRY}/origin:${_TAG}
+      - -t
+      - ${_REGISTRY}/origin:v1
+      - p2p-coordinator
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - p2p-coordinator/bootstrap/Dockerfile
+      - -t
+      - ${_REGISTRY}/dht-bootstrap:${_TAG}
+      - -t
+      - ${_REGISTRY}/dht-bootstrap:v1
+      - p2p-coordinator
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - p2p-dht/peer/Dockerfile
+      - -t
+      - ${_REGISTRY}/dht-peer:${_TAG}
+      - -t
+      - ${_REGISTRY}/dht-peer:v1
+      - p2p-dht
+
+images:
+  - ${_REGISTRY}/coordinator:${_TAG}
+  - ${_REGISTRY}/coordinator:v1
+  - ${_REGISTRY}/coord-peer:${_TAG}
+  - ${_REGISTRY}/coord-peer:v1
+  - ${_REGISTRY}/origin:${_TAG}
+  - ${_REGISTRY}/origin:v1
+  - ${_REGISTRY}/dht-bootstrap:${_TAG}
+  - ${_REGISTRY}/dht-bootstrap:v1
+  - ${_REGISTRY}/dht-peer:${_TAG}
+  - ${_REGISTRY}/dht-peer:v1
