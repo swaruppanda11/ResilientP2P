@@ -16,6 +16,7 @@ Running:
 
 import asyncio
 import json
+import os
 import random
 import statistics
 import subprocess
@@ -33,6 +34,35 @@ DEFAULT_BOOTSTRAP_WAIT_SECONDS = 6.0   # slightly longer than coordinator stack
 SERVICE_CONTROL_TIMEOUT_SECONDS = 60.0
 SERVICE_READY_TIMEOUT_SECONDS = 60.0
 SERVICE_READY_POLL_SECONDS = 1.0
+
+
+class _RunnerAuth(httpx.Auth):
+    """Attaches bearer + identity headers on every host-driven request."""
+
+    def __init__(self, token: str, peer_id: str, peer_group: str):
+        self._token = token
+        self._peer_id = peer_id
+        self._peer_group = peer_group
+
+    def auth_flow(self, request):
+        if self._token:
+            request.headers["Authorization"] = f"Bearer {self._token}"
+        if self._peer_id:
+            request.headers["X-Peer-Id"] = self._peer_id
+        if self._peer_group:
+            request.headers["X-Peer-Group"] = self._peer_group
+        yield request
+
+
+def _runner_auth() -> Optional[httpx.Auth]:
+    token = os.getenv("AUTH_TOKEN", "")
+    if not token:
+        return None
+    return _RunnerAuth(
+        token=token,
+        peer_id=os.getenv("RUNNER_PEER_ID", "runner"),
+        peer_group=os.getenv("PEER_GROUP", ""),
+    )
 
 
 @dataclass(frozen=True)
@@ -84,6 +114,7 @@ class ExperimentRunner:
 
     async def run(self) -> None:
         try:
+            await self._preflight_auth_check()
             for scenario in self.spec["scenarios"]:
                 result = await self.run_scenario(scenario)
                 result_path = self.results_dir / f"{self._slugify(scenario['name'])}.json"
@@ -92,6 +123,27 @@ class ExperimentRunner:
                 print(f"[+] Wrote results to {result_path}")
         finally:
             self._stop_port_forwards()
+
+    async def _preflight_auth_check(self) -> None:
+        """Probe a gated endpoint once before scenarios.
+
+        If the cluster requires auth but the runner has no AUTH_TOKEN, fail
+        loudly here rather than emitting a stream of 401s mid-experiment.
+        """
+        self._start_port_forwards()
+        coord_url = self.spec.get("coordinator_url", "http://localhost:8000")
+        try:
+            async with httpx.AsyncClient(timeout=5.0, auth=_runner_auth()) as client:
+                resp = await client.get(f"{coord_url}/stats")
+                if resp.status_code == 401 and not os.getenv("AUTH_TOKEN"):
+                    print(
+                        "[!] Cluster requires AUTH_TOKEN but runner has none set.\n"
+                        "    Export AUTH_TOKEN (and optionally PEER_GROUP) and retry.",
+                        file=sys.stderr,
+                    )
+                    sys.exit(2)
+        except httpx.HTTPError:
+            return
 
     async def run_scenario(self, scenario: Dict[str, Any]) -> Dict[str, Any]:
         scenario_name = scenario["name"]
@@ -109,7 +161,7 @@ class ExperimentRunner:
         event_results: List[Dict[str, Any]] = []
         scenario_start = time.perf_counter()
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, auth=_runner_auth()) as client:
             for event in events:
                 await self._sleep_until(event.at_seconds, scenario_start)
                 result = await self._execute_event(event, client, scenario_start)
@@ -765,7 +817,7 @@ class ExperimentRunner:
     async def _wait_for_stack_ready(self) -> None:
         if self.orchestrator == "kubernetes":
             self._start_port_forwards()
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=5.0, auth=_runner_auth()) as client:
             coordinator_url = self.spec.get("coordinator_url", "http://localhost:8000")
             origin_url = self.spec.get("origin_url", "http://localhost:8001")
             await self._wait_for_url(client, f"{coordinator_url}/health")
@@ -829,7 +881,7 @@ class ExperimentRunner:
         health_url = self._service_health_url(service_name)
         if health_url is None:
             return
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=5.0, auth=_runner_auth()) as client:
             await self._wait_for_url(client, health_url)
 
     def _service_health_url(self, service_name: str) -> Optional[str]:
@@ -849,7 +901,7 @@ class ExperimentRunner:
         peer_url = self.peer_map[peer_id]["url"]
         owns_client = client is None
         if client is None:
-            client = httpx.AsyncClient(timeout=5.0)
+            client = httpx.AsyncClient(timeout=5.0, auth=_runner_auth())
         try:
             await self._wait_for_url(client, f"{peer_url}/health")
         finally:

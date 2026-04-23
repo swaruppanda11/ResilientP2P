@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 import asyncio
 import logging
 import os
 
+from common.auth import AuthContext, require_auth
 from common.config import get_peer_settings
 from common.logging import get_logger, log_event
 from common.schemas import HealthResponse, PeerFetchResponse, PeerStatsResponse
@@ -70,10 +71,24 @@ async def rebootstrap_loop():
 app = FastAPI(title=f"Peer {settings.peer_id}", lifespan=lifespan)
 
 @app.get("/get-object/{object_id}")
-async def get_object(object_id: str, requester_location_id: str = Query(...)):
+async def get_object(
+    object_id: str,
+    requester_location_id: str = Query(...),
+    auth: AuthContext = Depends(require_auth),
+):
     data = cache.get(object_id)
     if not data:
         raise HTTPException(status_code=404, detail="Object not in cache")
+
+    metadata = cache.get_metadata(object_id)
+    if metadata is not None and metadata.visibility == "restricted":
+        if not auth.peer_group or auth.peer_group not in (metadata.allowed_groups or []):
+            log_event(
+                logger, logging.WARNING, "get_object_forbidden",
+                peer_id=settings.peer_id, object_id=object_id,
+                claimed_group=auth.peer_group,
+            )
+            raise HTTPException(status_code=403, detail="forbidden")
 
     if requester_location_id == settings.location_id:
         delay_ms = settings.intra_location_delay_ms
@@ -94,7 +109,6 @@ async def get_object(object_id: str, requester_location_id: str = Query(...)):
     )
     # Do not block the data-plane response on coordinator-side accounting.
     asyncio.create_task(client.report_transfer(object_id, len(data)))
-    metadata = cache.get_metadata(object_id)
     return {
         "content_hex": data.hex(),
         "metadata": metadata.dict() if metadata else None,
@@ -102,7 +116,7 @@ async def get_object(object_id: str, requester_location_id: str = Query(...)):
 
 
 @app.post("/invalidate/{object_id}")
-async def invalidate_object(object_id: str):
+async def invalidate_object(object_id: str, _: AuthContext = Depends(require_auth)):
     removed = cache.invalidate(object_id)
     await dht_node.remove_peer(settings.peer_id, [object_id])
     log_event(
@@ -117,7 +131,7 @@ async def invalidate_object(object_id: str):
 
 
 @app.post("/invalidate-prefix")
-async def invalidate_prefix(prefix: str = Query(...)):
+async def invalidate_prefix(prefix: str = Query(...), _: AuthContext = Depends(require_auth)):
     removed_object_ids = cache.invalidate_prefix(prefix)
     await dht_node.remove_peer(settings.peer_id, removed_object_ids)
     log_event(
@@ -135,7 +149,7 @@ async def invalidate_prefix(prefix: str = Query(...)):
     }
 
 @app.post("/suicide")
-async def suicide():
+async def suicide(_: AuthContext = Depends(require_auth)):
     # Simulate a crash
     print("Suicide requested. Stopping peer...")
     os._exit(0)
@@ -146,6 +160,7 @@ async def trigger_fetch(
     version: str | None = Query(default=None),
     cacheability: str | None = Query(default=None),
     max_age_seconds: int | None = Query(default=None),
+    _: AuthContext = Depends(require_auth),
 ):
     result = await client.fetch_object(
         object_id,
@@ -180,7 +195,7 @@ async def health():
 
 
 @app.get("/stats", response_model=PeerStatsResponse)
-async def stats():
+async def stats(_: AuthContext = Depends(require_auth)):
     cache_stats = cache.get_stats()
     return PeerStatsResponse(
         status="ok",

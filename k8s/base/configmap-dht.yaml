@@ -21,3 +21,6 @@ data:
   MAX_PROVIDERS_PER_LOOKUP: "3"
   LOOKUP_TIMEOUT_SECONDS: "2.0"
   CACHE_CAPACITY_BYTES: "10485760"
+  # Workstream 2: flip to "permissive" then "shared_token" after the auth
+  # Secret is rolled out to every pod. AUTH_TOKEN comes from the Secret.
+  AUTH_MODE: "none"

@@ -11,6 +11,11 @@ class ObjectMetadata(BaseModel):
     max_age_seconds: Optional[int] = None
     expires_at: Optional[datetime] = None
     etag: Optional[str] = None
+    # Access control (Workstream 2). Defaults are backwards-compatible: every
+    # existing publish round-trips as public with no group restrictions.
+    visibility: str = "public"  # public | restricted
+    allowed_groups: List[str] = Field(default_factory=list)
+    owner: Optional[str] = None
 
 
 class InvalidateResponse(BaseModel):

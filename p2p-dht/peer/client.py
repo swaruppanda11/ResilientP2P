@@ -23,6 +23,7 @@ from typing import Dict, List, Optional, Tuple
 
 import httpx
 
+from common.auth import outbound_auth
 from common.config import get_dht_peer_settings
 from common.logging import get_logger, log_event
 from common.metrics import MetricEvent, log_metric
@@ -69,7 +70,10 @@ class DHTPeerClient:
         self.cache = cache
         self.settings = get_dht_peer_settings()
         self.logger = get_logger(f"dht-peer:{peer_id}")
-        self.http_client = httpx.AsyncClient(timeout=10.0)
+        self.http_client = httpx.AsyncClient(
+            timeout=10.0,
+            auth=outbound_auth(peer_id=peer_id),
+        )
         self.host = self.settings.host
         self.port = self.settings.port
         self._register_lock = asyncio.Lock()

@@ -32,6 +32,35 @@
   },
   "scenarios": [
     {
+      "name": "Auth Enforcement Smoke Test",
+      "description": "End-to-end verification that an authenticated stack (AUTH_MODE=shared_token, AUTH_TOKEN wired via Secret + runner env) passes an auth-gated fetch path. Ran as a separate scenario so its result JSON lives alongside the other Workstream 2 artifacts in results-k8s-hardening/. Visibility filtering is covered by the pytest suite; this scenario only validates the bearer-token plumbing.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "auth-smoke-object"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "auth-smoke-object"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "auth-smoke-object"
+        }
+      ]
+    },
+    {
       "name": "Explicit Locality Smoke Test",
       "description": "Simple deterministic run for sanity checking coordinator lookup and peer transfer.",
       "steps": [

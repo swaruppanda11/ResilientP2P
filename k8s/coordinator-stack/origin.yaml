@@ -20,12 +20,11 @@ spec:
         image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/origin:v1
         ports:
         - containerPort: 8001
-        env:
-        - name: ORIGIN_DELAY_MS
-          valueFrom:
-            configMapKeyRef:
-              name: p2p-common-config
-              key: ORIGIN_DELAY_MS
+        envFrom:
+        - configMapRef:
+            name: p2p-common-config
+        - secretRef:
+            name: p2p-auth-token
         readinessProbe:
           httpGet:
             path: /health

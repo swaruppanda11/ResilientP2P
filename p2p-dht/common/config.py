@@ -25,6 +25,24 @@ def _get_str(name: str, default: str) -> str:
 
 
 @dataclass(frozen=True)
+class AuthSettings:
+    """Peer authentication settings.
+
+    AUTH_MODE is one of:
+      - "none"         : no enforcement; existing experiments unchanged (default)
+      - "permissive"   : validate token if present, log missing/invalid, allow
+      - "shared_token" : strict; 401 on missing/invalid Authorization header
+
+    X-Peer-Id and X-Peer-Group are client-asserted attribution headers. The
+    shared token gates the campus trust boundary; identity binding itself is
+    not cryptographic until cert/oidc modes land.
+    """
+    mode: str
+    token: str
+    peer_group: str
+
+
+@dataclass(frozen=True)
 class CommonSettings:
     heartbeat_interval_seconds: int
     peer_timeout_seconds: int
@@ -34,25 +52,34 @@ class CommonSettings:
     intra_location_delay_ms: int
     inter_location_delay_ms: int
     origin_delay_ms: int
+    auth: AuthSettings = None  # populated by getters below
 
 
 @dataclass(frozen=True)
 class DHTPeerSettings(CommonSettings):
-    peer_id: str
-    location_id: str
-    coordinator_url: str
-    origin_url: str
-    host: str
-    port: int
-    cache_capacity_bytes: int
+    peer_id: str = ""
+    location_id: str = "Building-A"
+    coordinator_url: str = "http://coordinator:8000"
+    origin_url: str = "http://origin:8001"
+    host: str = ""
+    port: int = 7000
+    cache_capacity_bytes: int = 10 * 1024 * 1024
     # DHT-specific settings
-    dht_port: int
-    dht_bootstrap_host: str
-    dht_bootstrap_port: int
-    dht_lookup_timeout_seconds: float
-    dht_republish_interval_seconds: int
-    dht_rebootstrap_interval_seconds: int
+    dht_port: int = 6000
+    dht_bootstrap_host: str = "dht-bootstrap"
+    dht_bootstrap_port: int = 6000
+    dht_lookup_timeout_seconds: float = 0.5
+    dht_republish_interval_seconds: int = 300
+    dht_rebootstrap_interval_seconds: int = 15
     service_name: str = "dht-peer"
+
+
+def get_auth_settings() -> AuthSettings:
+    return AuthSettings(
+        mode=_get_str("AUTH_MODE", "none"),
+        token=_get_str("AUTH_TOKEN", ""),
+        peer_group=_get_str("PEER_GROUP", ""),
+    )
 
 
 def get_common_settings() -> CommonSettings:
@@ -65,6 +92,7 @@ def get_common_settings() -> CommonSettings:
         intra_location_delay_ms=_get_int("INTRA_LOCATION_DELAY_MS", 5),
         inter_location_delay_ms=_get_int("INTER_LOCATION_DELAY_MS", 35),
         origin_delay_ms=_get_int("ORIGIN_DELAY_MS", 120),
+        auth=get_auth_settings(),
     )
 
 
@@ -80,6 +108,7 @@ def get_dht_peer_settings() -> DHTPeerSettings:
         intra_location_delay_ms=common.intra_location_delay_ms,
         inter_location_delay_ms=common.inter_location_delay_ms,
         origin_delay_ms=common.origin_delay_ms,
+        auth=common.auth,
         peer_id=peer_id,
         location_id=_get_str("LOCATION_ID", "Building-A"),
         coordinator_url=_get_str("COORDINATOR_URL", "http://coordinator:8000"),

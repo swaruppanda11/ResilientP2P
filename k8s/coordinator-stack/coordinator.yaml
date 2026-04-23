@@ -23,6 +23,8 @@ spec:
         envFrom:
         - configMapRef:
             name: p2p-common-config
+        - secretRef:
+            name: p2p-auth-token
         securityContext:
           capabilities:
             add: ["NET_ADMIN"]

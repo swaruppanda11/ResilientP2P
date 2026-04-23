@@ -2,9 +2,10 @@ import logging
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, Query
+from fastapi import Depends, FastAPI, Query
 from fastapi.responses import JSONResponse
 
+from common.auth import AuthContext, outbound_auth, require_auth
 from common.config import get_coordinator_settings
 from common.logging import get_logger, log_event
 from common.schemas import (
@@ -80,7 +81,7 @@ async def handle_invalid_publish(_, exc: InvalidPublishError):
     response_model=RegisterResponse,
     responses={409: {"model": ErrorResponse}},
 )
-async def register(req: RegisterRequest):
+async def register(req: RegisterRequest, _: AuthContext = Depends(require_auth)):
     peer = store.register_peer(req)
     log_event(
         logger,
@@ -98,7 +99,7 @@ async def register(req: RegisterRequest):
     response_model=PublishResponse,
     responses={400: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
-async def publish(req: PublishRequest):
+async def publish(req: PublishRequest, _: AuthContext = Depends(require_auth)):
     store.publish_object(req.peer_id, req.metadata)
     log_event(
         logger,
@@ -119,9 +120,20 @@ async def lookup(
     object_id: str,
     location_id: str = Query(...),
     version: str | None = Query(default=None),
+    auth: AuthContext = Depends(require_auth),
 ):
     providers = store.get_providers(object_id, location_id, version=version)
     metadata = store.get_object_metadata(object_id, version=version)
+    # Visibility gate: unify "exists but hidden" with "does not exist" so the
+    # coordinator response can't be used to probe for restricted-object names.
+    if metadata is not None and metadata.visibility == "restricted":
+        if not auth.peer_group or auth.peer_group not in (metadata.allowed_groups or []):
+            log_event(
+                logger, logging.INFO, "object_lookup_hidden",
+                object_id=object_id, location_id=location_id,
+                claimed_group=auth.peer_group,
+            )
+            return LookupResponse(object_id=object_id, providers=[], metadata=None)
     log_event(
         logger,
         logging.INFO,
@@ -138,10 +150,10 @@ async def lookup(
 
 
 @app.post("/invalidate/{object_id}", response_model=InvalidateResponse)
-async def invalidate(object_id: str):
+async def invalidate(object_id: str, _: AuthContext = Depends(require_auth)):
     provider_urls, removed_provider_entries = store.invalidate_object(object_id)
     notified_peers = 0
-    async with httpx.AsyncClient(timeout=1.0) as client:
+    async with httpx.AsyncClient(timeout=1.0, auth=outbound_auth(peer_id=settings.service_name)) as client:
         for provider_url in provider_urls:
             try:
                 resp = await client.post(f"{provider_url}/invalidate/{object_id}")
@@ -174,10 +186,10 @@ async def invalidate(object_id: str):
 
 
 @app.post("/invalidate-prefix")
-async def invalidate_prefix(prefix: str = Query(...)):
+async def invalidate_prefix(prefix: str = Query(...), _: AuthContext = Depends(require_auth)):
     provider_urls, removed_provider_entries, object_ids = store.invalidate_prefix(prefix)
     notified_peers = 0
-    async with httpx.AsyncClient(timeout=1.0) as client:
+    async with httpx.AsyncClient(timeout=1.0, auth=outbound_auth(peer_id=settings.service_name)) as client:
         for provider_url in provider_urls:
             try:
                 resp = await client.post(
@@ -215,10 +227,10 @@ async def invalidate_prefix(prefix: str = Query(...)):
 
 
 @app.post("/revalidate/{object_id}", response_model=InvalidateResponse)
-async def revalidate(object_id: str):
+async def revalidate(object_id: str, auth: AuthContext = Depends(require_auth)):
     # The coordinator does not fetch content itself. Revalidation means clearing
     # stale discovery/cache state so the next requester refetches from origin.
-    return await invalidate(object_id)
+    return await invalidate(object_id, auth)
 
 
 @app.post(
@@ -226,7 +238,7 @@ async def revalidate(object_id: str):
     response_model=HeartbeatResponse,
     responses={404: {"model": ErrorResponse}},
 )
-async def heartbeat(req: HeartbeatRequest):
+async def heartbeat(req: HeartbeatRequest, _: AuthContext = Depends(require_auth)):
     store.heartbeat(req.peer_id)
     return HeartbeatResponse(status="ok", peer_id=req.peer_id)
 
@@ -236,7 +248,7 @@ async def heartbeat(req: HeartbeatRequest):
     response_model=TransferReportResponse,
     responses={404: {"model": ErrorResponse}},
 )
-async def report_transfer(req: TransferReportRequest):
+async def report_transfer(req: TransferReportRequest, _: AuthContext = Depends(require_auth)):
     load = store.report_transfer(req.peer_id, req.object_id, req.bytes_served)
     log_event(
         logger,
@@ -262,7 +274,7 @@ async def health():
 
 
 @app.get("/stats", response_model=CoordinatorStatsResponse)
-async def stats():
+async def stats(_: AuthContext = Depends(require_auth)):
     data = store.get_stats()
     return CoordinatorStatsResponse(
         status="ok",

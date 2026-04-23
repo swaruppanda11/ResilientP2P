@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 import asyncio
 import hashlib
 import time
 from datetime import datetime, timedelta, timezone
 
+from common.auth import AuthContext, require_auth
 from common.config import get_origin_settings
 from common.schemas import HealthResponse
 
@@ -25,6 +26,7 @@ async def get_object(
     version: str = Query("1"),
     cacheability: str = Query("immutable"),
     max_age_seconds: int | None = Query(None),
+    _: AuthContext = Depends(require_auth),
 ):
     # Simulate WAN delay
     effective_delay_seconds = (
@@ -58,6 +60,7 @@ async def get_metadata(
     version: str = Query("1"),
     cacheability: str = Query("immutable"),
     max_age_seconds: int | None = Query(None),
+    _: AuthContext = Depends(require_auth),
 ):
     content_key = object_id if version == "1" else f"{object_id}:v{version}"
     content, checksum = generate_content(content_key, size=1024 * 1024)

@@ -27,11 +27,15 @@ spec:
         envFrom:
         - configMapRef:
             name: p2p-common-config
+        - secretRef:
+            name: p2p-auth-token
         env:
         - name: PEER_ID
           value: "peer-a1"
         - name: LOCATION_ID
           value: "Building-A"
+        - name: PEER_GROUP
+          value: "professors"
         - name: PEER_HOST
           value: "peer-a1.p2p-dht.svc.cluster.local"
         securityContext:
