@@ -25,6 +25,29 @@ def _get_str(name: str, default: str) -> str:
 
 
 @dataclass(frozen=True)
+class ReputationSettings:
+    """Workstream 3 — peer reputation thresholds.
+
+    Score is a float so signal weights can be asymmetric:
+      - server-observable metadata_conflict = 2.0
+      - peer-reported checksum_mismatch     = 1.0
+      - peer-reported unavailable           = 0.5
+
+    Score accumulates; once it crosses suspect_threshold a peer is suspect,
+    once quarantine_threshold a peer is quarantined. A quarantined peer
+    leaves quarantine after `cooldown_seconds` of silence; on exit, the
+    counters are halved (not zeroed) so a re-offender gets quarantined
+    sooner the second time.
+    """
+    enabled: bool
+    suspect_threshold: float
+    quarantine_threshold: float
+    cooldown_seconds: int
+    report_dedupe_window_seconds: int
+    origin_exempt_peer_ids: tuple
+
+
+@dataclass(frozen=True)
 class AuthSettings:
     """Peer authentication settings.
 
@@ -53,6 +76,7 @@ class CommonSettings:
     inter_location_delay_ms: int
     origin_delay_ms: int
     auth: AuthSettings = None  # populated by getters below
+    reputation: ReputationSettings = None
 
 
 @dataclass(frozen=True)
@@ -64,6 +88,9 @@ class DHTPeerSettings(CommonSettings):
     host: str = ""
     port: int = 7000
     cache_capacity_bytes: int = 10 * 1024 * 1024
+    # Workstream 3: malicious test mode for eval scenarios.
+    # normal | serve_corrupted | advertise_missing | publish_conflicting
+    malicious_mode: str = "normal"
     # DHT-specific settings
     dht_port: int = 6000
     dht_bootstrap_host: str = "dht-bootstrap"
@@ -82,6 +109,19 @@ def get_auth_settings() -> AuthSettings:
     )
 
 
+def get_reputation_settings() -> ReputationSettings:
+    enabled = _get_str("REPUTATION_ENABLED", "false").lower() == "true"
+    exempt_raw = _get_str("REPUTATION_ORIGIN_EXEMPT_PEER_IDS", "origin")
+    return ReputationSettings(
+        enabled=enabled,
+        suspect_threshold=_get_float("REPUTATION_SUSPECT_THRESHOLD", 1.0),
+        quarantine_threshold=_get_float("REPUTATION_QUARANTINE_THRESHOLD", 3.0),
+        cooldown_seconds=_get_int("REPUTATION_COOLDOWN_SECONDS", 60),
+        report_dedupe_window_seconds=_get_int("REPUTATION_DEDUPE_WINDOW_SECONDS", 10),
+        origin_exempt_peer_ids=tuple(p.strip() for p in exempt_raw.split(",") if p.strip()),
+    )
+
+
 def get_common_settings() -> CommonSettings:
     return CommonSettings(
         heartbeat_interval_seconds=_get_int("HEARTBEAT_INTERVAL_SECONDS", 10),
@@ -93,6 +133,7 @@ def get_common_settings() -> CommonSettings:
         inter_location_delay_ms=_get_int("INTER_LOCATION_DELAY_MS", 35),
         origin_delay_ms=_get_int("ORIGIN_DELAY_MS", 120),
         auth=get_auth_settings(),
+        reputation=get_reputation_settings(),
     )
 
 
@@ -109,6 +150,7 @@ def get_dht_peer_settings() -> DHTPeerSettings:
         inter_location_delay_ms=common.inter_location_delay_ms,
         origin_delay_ms=common.origin_delay_ms,
         auth=common.auth,
+        reputation=common.reputation,
         peer_id=peer_id,
         location_id=_get_str("LOCATION_ID", "Building-A"),
         coordinator_url=_get_str("COORDINATOR_URL", "http://coordinator:8000"),
@@ -116,6 +158,7 @@ def get_dht_peer_settings() -> DHTPeerSettings:
         host=_get_str("PEER_HOST", peer_id),
         port=_get_int("PEER_PORT", 7000),
         cache_capacity_bytes=_get_int("CACHE_CAPACITY_BYTES", 10 * 1024 * 1024),
+        malicious_mode=_get_str("MALICIOUS_MODE", "normal"),
         dht_port=_get_int("DHT_PORT", 6000),
         dht_bootstrap_host=_get_str("DHT_BOOTSTRAP_HOST", "dht-bootstrap"),
         dht_bootstrap_port=_get_int("DHT_BOOTSTRAP_PORT", 6000),

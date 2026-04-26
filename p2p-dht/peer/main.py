@@ -111,6 +111,15 @@ async def get_object(
     )
     # Keep peer-to-peer serving independent from coordinator accounting.
     asyncio.create_task(client.report_transfer(object_id, len(data)))
+
+    # Workstream 3: malicious peer XORs the first byte before responding.
+    if settings.malicious_mode == "serve_corrupted" and data:
+        data = bytes([data[0] ^ 0x01]) + data[1:]
+        log_event(
+            logger, logging.WARNING, "serving_corrupted_bytes",
+            peer_id=settings.peer_id, object_id=object_id,
+        )
+
     return {
         "content_hex": data.hex(),
         "metadata": metadata.dict() if metadata else None,

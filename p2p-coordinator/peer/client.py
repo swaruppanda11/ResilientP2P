@@ -22,10 +22,13 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
+from urllib.parse import urlparse
+
 from common.auth import outbound_auth
 from common.config import get_peer_settings
 from common.logging import get_logger, log_event
 from common.schemas import (
+    BadPeerReportRequest,
     HeartbeatRequest,
     LookupResponse,
     ObjectMetadata,
@@ -33,6 +36,17 @@ from common.schemas import (
     RegisterRequest,
     TransferReportRequest,
 )
+
+
+def _peer_id_from_url(url: str) -> str:
+    """Best-effort peer_id extraction from a peer URL.
+
+    Works for both K8s (`peer-a1.p2p-coordinator.svc.cluster.local:7000`)
+    and docker-compose (`peer-a1:7000`) URL shapes — the first hostname
+    segment is the service / container name and matches the peer_id.
+    """
+    host = urlparse(url).hostname or ""
+    return host.split(".")[0]
 from common.metrics import log_metric, MetricEvent
 from dht.node import DHTNode
 from peer.cache import Cache, CacheWriteResult
@@ -288,6 +302,7 @@ class PeerClient:
                     metadata = None
                     continue
                 if metadata and hashlib.sha256(data).hexdigest() != metadata.checksum:
+                    actual_checksum = hashlib.sha256(data).hexdigest()
                     log_event(
                         self.logger,
                         logging.WARNING,
@@ -296,6 +311,15 @@ class PeerClient:
                         object_id=object_id,
                         provider=peer_url,
                     )
+                    # WS3: report the malicious provider, fire-and-forget.
+                    asyncio.create_task(self.report_bad_peer(
+                        accused_peer_id=_peer_id_from_url(peer_url),
+                        object_id=object_id,
+                        reason="checksum_mismatch",
+                        expected_checksum=metadata.checksum,
+                        actual_checksum=actual_checksum,
+                        provider_url=peer_url,
+                    ))
                     metadata = None
                     continue
                 if metadata:
@@ -326,7 +350,33 @@ class PeerClient:
                     coordinator_used=not coordinator_failed,
                     dht_fallback_used=dht_fallback_used,
                 )
+            except httpx.HTTPStatusError as e:
+                # WS3: a 404 from a peer that just claimed (via coordinator
+                # lookup) to have this object is the "advertise_missing"
+                # signal. 5xx is the same idea — peer says it has it but
+                # can't deliver. Connection-level failures fall through to
+                # the generic Exception handler and are NOT reported.
+                if e.response.status_code in (404, 410, 500, 503):
+                    asyncio.create_task(self.report_bad_peer(
+                        accused_peer_id=_peer_id_from_url(peer_url),
+                        object_id=object_id,
+                        reason="unavailable",
+                        provider_url=peer_url,
+                    ))
+                log_event(
+                    self.logger,
+                    logging.WARNING,
+                    "peer_fetch_failed",
+                    peer_id=self.peer_id,
+                    object_id=object_id,
+                    provider=peer_url,
+                    status_code=e.response.status_code,
+                    error=str(e),
+                )
+                continue
             except Exception as e:
+                # Connection refused, timeout, DNS, etc. — transient, NOT
+                # malicious behavior. Skip reporting.
                 log_event(
                     self.logger,
                     logging.WARNING,
@@ -362,10 +412,19 @@ class PeerClient:
                 expires_at=res.get("expires_at"),
                 etag=res.get("etag"),
             )
-            write_result = self.cache.put(meta, data)
-            self._log_cache_write_metrics(object_id, write_result)
-            if write_result.stored:
+            # WS3: `advertise_missing` peers DO announce but do NOT cache —
+            # the index claims they have it, /get-object on them then 404s.
+            if self.settings.malicious_mode == "advertise_missing":
+                log_event(
+                    self.logger, logging.WARNING, "advertising_missing",
+                    peer_id=self.peer_id, object_id=object_id,
+                )
                 self._schedule_post_store_updates(meta)
+            else:
+                write_result = self.cache.put(meta, data)
+                self._log_cache_write_metrics(object_id, write_result)
+                if write_result.stored:
+                    self._schedule_post_store_updates(meta)
 
             latency = (time.perf_counter() - start_time) * 1000
             log_metric(MetricEvent(
@@ -499,6 +558,16 @@ class PeerClient:
         await self.publish(metadata)
 
     async def publish(self, metadata: ObjectMetadata):
+        # WS3: `publish_conflicting` mutates the checksum so the coordinator's
+        # _metadata_conflicts detector raises against this peer (provided an
+        # honest peer published the canonical metadata first).
+        if self.settings.malicious_mode == "publish_conflicting":
+            mutator = metadata.model_copy if hasattr(metadata, "model_copy") else metadata.copy
+            metadata = mutator(update={"checksum": "0" * 64})
+            log_event(
+                self.logger, logging.WARNING, "publishing_conflicting_metadata",
+                peer_id=self.peer_id, object_id=metadata.object_id,
+            )
         req = PublishRequest(peer_id=self.peer_id, metadata=metadata)
         try:
             resp = await self.http_client.post(
@@ -531,6 +600,45 @@ class PeerClient:
                 peer_id=self.peer_id,
                 object_id=metadata.object_id,
                 error=str(e),
+            )
+
+    async def report_bad_peer(
+        self,
+        accused_peer_id: str,
+        object_id: str,
+        reason: str,
+        expected_checksum: Optional[str] = None,
+        actual_checksum: Optional[str] = None,
+        provider_url: Optional[str] = None,
+    ) -> None:
+        """Workstream 3: tell the coordinator another peer misbehaved.
+
+        Fire-and-forget; failures are logged but never bubble up — peer
+        reputation reporting must never block the data plane.
+        """
+        if not self.settings.reputation.enabled:
+            return
+        if accused_peer_id == self.peer_id or not accused_peer_id:
+            return
+        try:
+            req = BadPeerReportRequest(
+                accused_peer_id=accused_peer_id,
+                object_id=object_id,
+                reason=reason,
+                expected_checksum=expected_checksum,
+                actual_checksum=actual_checksum,
+                provider_url=provider_url,
+            )
+            await self.http_client.post(
+                f"{self.coordinator_url}/report-bad-peer",
+                json=req.dict(),
+                timeout=2.0,
+            )
+        except Exception as exc:
+            log_event(
+                self.logger, logging.WARNING, "report_bad_peer_failed",
+                peer_id=self.peer_id, accused=accused_peer_id,
+                reason=reason, error=str(exc),
             )
 
     async def report_transfer(self, object_id: str, bytes_served: int) -> None:

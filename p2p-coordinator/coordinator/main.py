@@ -2,13 +2,34 @@ import logging
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from common.auth import AuthContext, outbound_auth, require_auth
+
+
+def _enforce_peer_id_match(claimed: str, body_peer_id: str) -> None:
+    """Block a peer from acting as another peer (WS2 follow-up bug fix).
+
+    When the caller asserted an identity, the body's `peer_id` field must
+    match it. Skipped when no identity is asserted (AUTH_MODE=none with no
+    X-Peer-Id header) to preserve backwards compatibility.
+    """
+    if claimed is None:
+        return
+    if claimed != body_peer_id:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "detail": f"body peer_id '{body_peer_id}' does not match authenticated peer '{claimed}'",
+                "error_code": "peer_id_mismatch",
+            },
+        )
 from common.config import get_coordinator_settings
 from common.logging import get_logger, log_event
 from common.schemas import (
+    BadPeerReportRequest,
+    BadPeerReportResponse,
     CoordinatorStatsResponse,
     ErrorResponse,
     HealthResponse,
@@ -16,6 +37,7 @@ from common.schemas import (
     HeartbeatResponse,
     InvalidateResponse,
     LookupResponse,
+    PeerReputationSnapshot,
     PublishRequest,
     PublishResponse,
     RegisterRequest,
@@ -23,9 +45,11 @@ from common.schemas import (
     TransferReportRequest,
     TransferReportResponse,
 )
+from coordinator.reputation import ReputationTracker
 from coordinator.store import (
     DuplicatePeerError,
     InvalidPublishError,
+    QuarantinedPublisherError,
     Store,
     UnknownPeerError,
 )
@@ -33,9 +57,11 @@ import asyncio
 
 settings = get_coordinator_settings()
 logger = get_logger(settings.service_name)
+reputation_tracker = ReputationTracker(settings.reputation)
 store = Store(
     max_providers_per_lookup=settings.max_providers_per_lookup,
     provider_selection_policy=settings.provider_selection_policy,
+    reputation=reputation_tracker if settings.reputation.enabled else None,
 )
 
 @asynccontextmanager
@@ -49,6 +75,15 @@ async def periodic_cleanup():
     while True:
         await asyncio.sleep(settings.cleanup_interval_seconds)
         store.cleanup(timeout_seconds=settings.peer_timeout_seconds)
+        # WS3: drive quarantined→healthy cooldown transitions on the same timer
+        # the peer-eviction loop already runs on. No-op when reputation disabled.
+        if settings.reputation.enabled:
+            recovered = reputation_tracker.tick_cooldowns()
+            for peer_id in recovered:
+                log_event(
+                    logger, logging.INFO, "reputation_recovered",
+                    peer_id=peer_id,
+                )
 
 app = FastAPI(title="P2P Coordinator", lifespan=lifespan)
 
@@ -76,12 +111,21 @@ async def handle_invalid_publish(_, exc: InvalidPublishError):
     )
 
 
+@app.exception_handler(QuarantinedPublisherError)
+async def handle_quarantined_publisher(_, exc: QuarantinedPublisherError):
+    return JSONResponse(
+        status_code=403,
+        content=ErrorResponse(detail=str(exc), error_code=exc.error_code).dict(),
+    )
+
+
 @app.post(
     "/register",
     response_model=RegisterResponse,
     responses={409: {"model": ErrorResponse}},
 )
-async def register(req: RegisterRequest, _: AuthContext = Depends(require_auth)):
+async def register(req: RegisterRequest, auth: AuthContext = Depends(require_auth)):
+    _enforce_peer_id_match(auth.peer_id, req.peer_id)
     peer = store.register_peer(req)
     log_event(
         logger,
@@ -99,7 +143,8 @@ async def register(req: RegisterRequest, _: AuthContext = Depends(require_auth))
     response_model=PublishResponse,
     responses={400: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
-async def publish(req: PublishRequest, _: AuthContext = Depends(require_auth)):
+async def publish(req: PublishRequest, auth: AuthContext = Depends(require_auth)):
+    _enforce_peer_id_match(auth.peer_id, req.peer_id)
     store.publish_object(req.peer_id, req.metadata)
     log_event(
         logger,
@@ -238,7 +283,8 @@ async def revalidate(object_id: str, auth: AuthContext = Depends(require_auth)):
     response_model=HeartbeatResponse,
     responses={404: {"model": ErrorResponse}},
 )
-async def heartbeat(req: HeartbeatRequest, _: AuthContext = Depends(require_auth)):
+async def heartbeat(req: HeartbeatRequest, auth: AuthContext = Depends(require_auth)):
+    _enforce_peer_id_match(auth.peer_id, req.peer_id)
     store.heartbeat(req.peer_id)
     return HeartbeatResponse(status="ok", peer_id=req.peer_id)
 
@@ -248,7 +294,8 @@ async def heartbeat(req: HeartbeatRequest, _: AuthContext = Depends(require_auth
     response_model=TransferReportResponse,
     responses={404: {"model": ErrorResponse}},
 )
-async def report_transfer(req: TransferReportRequest, _: AuthContext = Depends(require_auth)):
+async def report_transfer(req: TransferReportRequest, auth: AuthContext = Depends(require_auth)):
+    _enforce_peer_id_match(auth.peer_id, req.peer_id)
     load = store.report_transfer(req.peer_id, req.object_id, req.bytes_served)
     log_event(
         logger,
@@ -273,9 +320,58 @@ async def health():
     return HealthResponse(status="ok", service=settings.service_name)
 
 
+@app.post("/report-bad-peer", response_model=BadPeerReportResponse)
+async def report_bad_peer(
+    req: BadPeerReportRequest, auth: AuthContext = Depends(require_auth)
+):
+    """Workstream 3: a peer reports another peer for misbehavior.
+
+    Reporter identity is taken from `request.state.auth.peer_id` (set by the
+    require_auth dependency), NOT the body — peers cannot launder reports
+    through someone else's name. The body carries the accused.
+
+    Returns 404-shaped state when reputation is disabled or the report was
+    dropped (self-report, dedupe, exempt origin, unknown reason).
+    """
+    rep = reputation_tracker.record_incident(
+        accused_peer_id=req.accused_peer_id,
+        reason=req.reason,
+        reporter_peer_id=auth.peer_id,
+        object_id=req.object_id,
+    )
+    if rep is None:
+        # Either reputation disabled, exempt peer, self-report, or rate-limited.
+        # Return a synthetic snapshot so the caller can branch on the response
+        # without parsing different shapes.
+        snapshot = PeerReputationSnapshot(
+            peer_id=req.accused_peer_id, state="healthy", score=0.0,
+        )
+        return BadPeerReportResponse(
+            status="ignored", accused_peer_id=req.accused_peer_id, snapshot=snapshot,
+        )
+
+    log_event(
+        logger, logging.WARNING, "bad_peer_reported",
+        reporter=auth.peer_id, accused=req.accused_peer_id,
+        reason=req.reason, object_id=req.object_id,
+        new_state=rep.state, score=rep.score,
+    )
+    return BadPeerReportResponse(
+        status="recorded",
+        accused_peer_id=req.accused_peer_id,
+        snapshot=PeerReputationSnapshot(**rep.to_dict()),
+    )
+
+
 @app.get("/stats", response_model=CoordinatorStatsResponse)
 async def stats(_: AuthContext = Depends(require_auth)):
     data = store.get_stats()
+    reputation_snapshots = []
+    if settings.reputation.enabled:
+        reputation_snapshots = [
+            PeerReputationSnapshot(**rep.to_dict())
+            for rep in reputation_tracker.snapshots()
+        ]
     return CoordinatorStatsResponse(
         status="ok",
         service=settings.service_name,
@@ -288,4 +384,5 @@ async def stats(_: AuthContext = Depends(require_auth)):
         total_upload_requests=data["total_upload_requests"],
         total_upload_bytes=data["total_upload_bytes"],
         peer_loads=data["peer_loads"],
+        peer_reputations=reputation_snapshots,
     )

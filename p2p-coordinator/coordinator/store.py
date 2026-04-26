@@ -1,6 +1,7 @@
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 from datetime import datetime, timedelta, timezone
 from common.schemas import PeerInfo, ObjectMetadata, PeerLoadStats, RegisterRequest
+from coordinator.reputation import QUARANTINED, ReputationTracker
 
 
 class StoreError(Exception):
@@ -19,11 +20,16 @@ class InvalidPublishError(StoreError):
     error_code = "INVALID_PUBLISH"
 
 
+class QuarantinedPublisherError(StoreError):
+    error_code = "QUARANTINED_PUBLISHER"
+
+
 class Store:
     def __init__(
         self,
         max_providers_per_lookup: int = 3,
         provider_selection_policy: str = "locality_then_load",
+        reputation: Optional[ReputationTracker] = None,
     ):
         # Maps peer_id -> PeerInfo
         self.peers: Dict[str, PeerInfo] = {}
@@ -37,6 +43,10 @@ class Store:
         self.peer_loads: Dict[str, PeerLoadStats] = {}
         self.max_providers_per_lookup = max_providers_per_lookup
         self.provider_selection_policy = provider_selection_policy
+        # Workstream 3: optional reputation tracker. When None, behaves exactly
+        # as pre-WS3 — no filtering, no attribution, baseline experiments
+        # reproduce identically.
+        self.reputation = reputation
 
     def register_peer(self, req: RegisterRequest) -> PeerInfo:
         existing_peer = self.peers.get(req.peer_id)
@@ -64,9 +74,24 @@ class Store:
         if peer_id not in self.peers:
             raise UnknownPeerError(f"Peer '{peer_id}' is not registered")
 
+        # Workstream 3: a quarantined peer cannot publish — blocking it here
+        # prevents the index from being polluted while the peer is excluded
+        # from lookups.
+        if self.reputation is not None and self.reputation.is_quarantined(peer_id):
+            raise QuarantinedPublisherError(
+                f"Peer '{peer_id}' is quarantined and cannot publish"
+            )
+
         obj_id = metadata.object_id
         existing_metadata = self.object_metadata.get(obj_id)
         if existing_metadata and self._metadata_conflicts(existing_metadata, metadata):
+            # WS3 attribution: the *publishing* peer is the malicious actor.
+            if self.reputation is not None:
+                self.reputation.record_incident(
+                    accused_peer_id=peer_id,
+                    reason="metadata_conflict",
+                    object_id=obj_id,
+                )
             raise InvalidPublishError(
                 f"Object '{obj_id}' metadata conflicts with existing published metadata"
             )
@@ -115,8 +140,13 @@ class Store:
             for p_id in self.index[object_id]
             if peer_versions.get(p_id, metadata.version) == requested_version
         ]
+        # WS3: drop quarantined peers before ranking.
+        if self.reputation is not None:
+            peer_ids = [
+                p_id for p_id in peer_ids if not self.reputation.is_quarantined(p_id)
+            ]
         providers = []
-        
+
         for p_id in peer_ids:
             if p_id in self.peers:
                 providers.append(self.peers[p_id])
@@ -180,9 +210,18 @@ class Store:
     def _provider_sort_key(self, peer: PeerInfo, requesting_location: str):
         load = self.peer_loads.get(peer.peer_id, PeerLoadStats(peer_id=peer.peer_id))
         locality_key = peer.location_id != requesting_location
+        # WS3: suspect peers rank last regardless of locality/load. Healthy=0,
+        # suspect=1; quarantined are already filtered out of the candidate set
+        # before this sort runs.
+        suspect_key = (
+            1
+            if self.reputation is not None and self.reputation.is_suspect(peer.peer_id)
+            else 0
+        )
         if self.provider_selection_policy == "locality_only":
-            return (locality_key, peer.peer_id)
+            return (suspect_key, locality_key, peer.peer_id)
         return (
+            suspect_key,
             locality_key,
             load.total_upload_requests,
             load.total_upload_bytes,
@@ -225,6 +264,8 @@ class Store:
         for p_id in dead_peers:
             del self.peers[p_id]
             self.peer_loads.pop(p_id, None)
+            if self.reputation is not None:
+                self.reputation.remove(p_id)
             # Remove this peer from all index entries
             for obj_id in list(self.index.keys()):
                 if p_id in self.index[obj_id]:

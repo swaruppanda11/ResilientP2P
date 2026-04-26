@@ -109,6 +109,17 @@ async def get_object(
     )
     # Do not block the data-plane response on coordinator-side accounting.
     asyncio.create_task(client.report_transfer(object_id, len(data)))
+
+    # Workstream 3: malicious peer XORs the first byte before responding so
+    # the requester's SHA-256 verification fails. Gated by env var; the
+    # `normal` path is unchanged.
+    if settings.malicious_mode == "serve_corrupted" and data:
+        data = bytes([data[0] ^ 0x01]) + data[1:]
+        log_event(
+            logger, logging.WARNING, "serving_corrupted_bytes",
+            peer_id=settings.peer_id, object_id=object_id,
+        )
+
     return {
         "content_hex": data.hex(),
         "metadata": metadata.dict() if metadata else None,

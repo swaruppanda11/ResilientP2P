@@ -147,6 +147,47 @@ async def test_outbound_auth_attaches_all_three_headers(monkeypatch):
         assert req.headers.get("x-peer-group") == "professors", req.url
 
 
+# --- Test: WS3 prerequisite — body peer_id must match authenticated peer ---
+
+
+def test_publish_rejects_peer_id_spoof(monkeypatch):
+    """A peer authenticated as peer-a1 cannot publish-as peer-evil.
+
+    This is the WS2 follow-up bug fix that lands as a prerequisite for WS3
+    reputation attribution. Without it, a malicious peer could blame another
+    peer for its own conflicting publishes.
+    """
+    monkeypatch.setenv("AUTH_MODE", "shared_token")
+    monkeypatch.setenv("AUTH_TOKEN", "t")
+    import importlib
+    import sys
+    for m in list(sys.modules):
+        if m.startswith(("common", "coordinator")):
+            del sys.modules[m]
+    coord_main = importlib.import_module("coordinator.main")
+
+    with TestClient(coord_main.app) as c:
+        # Caller authenticates as peer-a1 but body claims peer-evil — must 403.
+        r = c.post(
+            "/publish",
+            headers={
+                "Authorization": "Bearer t",
+                "X-Peer-Id": "peer-a1",
+            },
+            json={
+                "peer_id": "peer-evil",
+                "metadata": {
+                    "object_id": "obj", "checksum": "x" * 64, "size_bytes": 1,
+                },
+            },
+        )
+        assert r.status_code == 403
+        body = r.json()
+        # Detail can be a dict (with our shape) or a string under FastAPI default.
+        if isinstance(body.get("detail"), dict):
+            assert body["detail"].get("error_code") == "peer_id_mismatch"
+
+
 # --- Bonus: sanitization strips newlines before logging ---
 
 def test_sanitize_strips_newlines():

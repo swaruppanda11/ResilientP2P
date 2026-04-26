@@ -131,3 +131,30 @@ class LogEvent(BaseModel):
     level: str
     event: str
     details: Dict[str, Any] = Field(default_factory=dict)
+
+
+# Workstream 3: malicious-peer reputation ----------------------------------
+
+class BadPeerReportRequest(BaseModel):
+    accused_peer_id: str
+    object_id: str
+    reason: str  # checksum_mismatch | unavailable | metadata_conflict
+    expected_checksum: Optional[str] = None
+    actual_checksum: Optional[str] = None
+    provider_url: Optional[str] = None
+
+
+class PeerReputationSnapshot(BaseModel):
+    peer_id: str
+    state: str  # healthy | suspect | quarantined
+    score: float
+    checksum_mismatches: int = 0
+    unavailable_count: int = 0
+    metadata_conflicts: int = 0
+    quarantined_at: Optional[float] = None
+
+
+class BadPeerReportResponse(BaseModel):
+    status: str
+    accused_peer_id: str
+    snapshot: PeerReputationSnapshot

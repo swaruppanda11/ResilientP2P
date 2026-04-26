@@ -24,3 +24,12 @@ data:
   # Workstream 2: flip to "permissive" then "shared_token" after the auth
   # Secret is rolled out to every pod. AUTH_TOKEN comes from the Secret.
   AUTH_MODE: "none"
+  # Workstream 3: feature-flagged. Off by default so baseline experiments
+  # (e.g. tag f01f039 cloud comparison) reproduce identically. Flip to
+  # "true" only when running malicious-peer scenarios or validating WS3.
+  REPUTATION_ENABLED: "false"
+  REPUTATION_SUSPECT_THRESHOLD: "1.0"
+  REPUTATION_QUARANTINE_THRESHOLD: "3.0"
+  REPUTATION_COOLDOWN_SECONDS: "60"
+  REPUTATION_DEDUPE_WINDOW_SECONDS: "10"
+  REPUTATION_ORIGIN_EXEMPT_PEER_IDS: "origin"

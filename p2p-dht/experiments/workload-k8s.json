@@ -32,6 +32,40 @@
   },
   "scenarios": [
     {
+      "name": "Malicious Peer Quarantine Test",
+      "description": "Workstream 3: peer-a1 is set to MALICIOUS_MODE=serve_corrupted; peer-a2 fetches via peer-a1, observes SHA-256 mismatch, fires /report-bad-peer to the coordinator (the DHT-primary stack still uses the coordinator as the reputation home). After enough reports peer-a1 quarantines and is excluded from both DHT-driven and coordinator-fallback lookups. Run with REPUTATION_ENABLED=true.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "ws3-malicious-object"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "ws3-malicious-object"
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "ws3-malicious-object"
+        },
+        {
+          "action": "wait",
+          "seconds": 2
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "ws3-malicious-object"
+        }
+      ]
+    },
+    {
       "name": "Auth Enforcement Smoke Test",
       "description": "End-to-end verification that an authenticated stack (AUTH_MODE=shared_token, AUTH_TOKEN wired via Secret + runner env) passes an auth-gated fetch path. Ran as a separate scenario so its result JSON lives alongside the other Workstream 2 artifacts in results-k8s-hardening/. Visibility filtering is covered by the pytest suite; this scenario only validates the bearer-token plumbing.",
       "steps": [

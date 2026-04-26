@@ -102,6 +102,8 @@ class CoordinatorStatsResponse(BaseModel):
     total_upload_requests: int
     total_upload_bytes: int
     peer_loads: List[PeerLoadStats]
+    # Workstream 3: per-peer reputation. Empty list when REPUTATION_ENABLED=false.
+    peer_reputations: List["PeerReputationSnapshot"] = Field(default_factory=list)
 
 
 class PeerStatsResponse(BaseModel):
@@ -131,6 +133,33 @@ class PeerFetchResponse(BaseModel):
 class ErrorResponse(BaseModel):
     detail: str
     error_code: str
+
+
+# Workstream 3: malicious-peer reputation ----------------------------------
+
+class BadPeerReportRequest(BaseModel):
+    accused_peer_id: str
+    object_id: str
+    reason: str  # checksum_mismatch | unavailable | metadata_conflict
+    expected_checksum: Optional[str] = None
+    actual_checksum: Optional[str] = None
+    provider_url: Optional[str] = None
+
+
+class PeerReputationSnapshot(BaseModel):
+    peer_id: str
+    state: str  # healthy | suspect | quarantined
+    score: float
+    checksum_mismatches: int = 0
+    unavailable_count: int = 0
+    metadata_conflicts: int = 0
+    quarantined_at: Optional[float] = None  # monotonic seconds
+
+
+class BadPeerReportResponse(BaseModel):
+    status: str
+    accused_peer_id: str
+    snapshot: PeerReputationSnapshot
 
 
 class LogEvent(BaseModel):
