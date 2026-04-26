@@ -540,6 +540,7 @@ class PeerClient:
             version=metadata.version,
             cacheability=metadata.cacheability,
             expires_at=metadata.expires_at.isoformat() if metadata.expires_at else None,
+            checksum=metadata.checksum,
         )
         if not announced:
             log_event(

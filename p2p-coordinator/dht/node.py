@@ -122,6 +122,7 @@ class DHTNode:
         version: str = "1",
         cacheability: str = "immutable",
         expires_at: Optional[str] = None,
+        checksum: Optional[str] = None,
     ) -> bool:
         """
         Announce that this peer holds a cached copy of object_id.
@@ -156,6 +157,12 @@ class DHTNode:
                     "version": version,
                     "cacheability": cacheability,
                     "expires_at": expires_at,
+                    # Workstream 3: include checksum so requesters under
+                    # REPUTATION_ENABLED=true can verify bytes after fetch.
+                    # Without this the provider record is rejected by
+                    # _select_dht_providers and DHT-primary fetches collapse
+                    # to origin.
+                    "checksum": checksum,
                 }
             )
 
@@ -184,6 +191,7 @@ class DHTNode:
         version: str = "1",
         cacheability: str = "immutable",
         expires_at: Optional[str] = None,
+        checksum: Optional[str] = None,
         attempts: int = 3,
         retry_delay_seconds: float = 0.2,
     ) -> bool:
@@ -200,6 +208,7 @@ class DHTNode:
                 version=version,
                 cacheability=cacheability,
                 expires_at=expires_at,
+                checksum=checksum,
             )
             if ok:
                 return True
