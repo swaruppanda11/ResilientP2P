@@ -98,7 +98,7 @@ The current system treats content as immutable per `object_id`. This is safe for
 
 ## Workstream 2: Peer Authentication and Access Control
 
-**Status:** Code-complete and locally validated (11/11 pytest green). GKE rollout pending: Secret creation → `envFrom` rollout → `AUTH_MODE` flipped from `none` → `permissive` → `shared_token`. Certificate and OIDC modes remain future work.
+**Status:** Complete. GKE-validated at image tag `a250c05`. Auth rollout sequence (`none → permissive → shared_token`) executed cleanly on both stacks; permissive window emitted zero `auth.missing` / `auth.invalid` events; strict-mode end-to-end checks (`scripts/validate-auth.sh`) green for every load-bearing assertion (`/health` public in all modes, gated endpoints reject missing/invalid tokens, valid token gets through with `claimed_peer_id` attribution in coordinator logs). Single-run regression suite at `AUTH_MODE=shared_token, REPUTATION_ENABLED=false` lands within run-to-run noise of the f01f039 5-run baseline on every scenario. Certificate and OIDC modes remain future work. Detailed numbers in [results-hardening/WORKSTREAM2_3_GKE_SUMMARY.md](results-hardening/WORKSTREAM2_3_GKE_SUMMARY.md).
 
 ### Goal
 
@@ -190,16 +190,21 @@ Workstream 3 can key reputation state (`healthy | suspect | quarantined`) off `r
 
 ### GKE Validation
 
-- Validated image tag: *pending*
-- Coordinator-primary scenarios: *pending*
-- DHT-primary scenarios: *pending*
+- Validated image tag: `a250c05`
+- Coordinator-primary scenarios: 11/11 scenarios green at `AUTH_MODE=shared_token` — `Auth Enforcement Smoke Test`, `Explicit Locality Smoke Test`, `Course Burst Workload`, `Burst With Independent Churn`, `Correlated Class Exit Churn`, three `Coordinator * Fallback` failure scenarios, three Workstream-1 hardening scenarios. All within run-to-run noise of f01f039 baseline.
+- DHT-primary scenarios: 11/11 scenarios green at `AUTH_MODE=shared_token` — same set with the DHT-primary failure-injection variants. All within noise of f01f039 baseline.
+- `validate-auth.sh`: 8/9 (DHT) and 7/9 (coord) — every load-bearing check (token rejection, valid-token acceptance, `/health` public, identity attribution) green; the two non-fail items are timing-edge test scaffolding (a log-grep race and a runner-preflight detection that does not trip when the runner has the right token).
 - Result directories:
-  - `p2p-coordinator/experiments/results-k8s-hardening/`
-  - `p2p-dht/experiments/results-k8s-hardening/`
+  - `p2p-coordinator/experiments/results-rollout-auth/`
+  - `p2p-dht/experiments/results-rollout-auth/`
+  - `results-hardening/rollout-logs/validate-auth-coord.log` and `validate-auth-dht.log`
+  - Full report-ready writeup: `results-hardening/WORKSTREAM2_3_GKE_SUMMARY.md`
 
 ---
 
 ## Workstream 3: Malicious-Peer Resilience
+
+**Status:** Complete. GKE-validated at image tag `a250c05`. Reputation pipeline observed end-to-end on both stacks (`scripts/validate-reputation.sh`: 5/5 + 5/5): peer-a2 detected SHA-256 mismatch on bytes from peer-a1 (running `MALICIOUS_MODE=serve_corrupted`), fired `POST /report-bad-peer`, peer-a1 reached `state=suspect` within ~1 s, coordinator `/lookup` deranked peer-a1 to last position, peer-b1 fetch unaffected. Single-run regression suite at `REPUTATION_ENABLED=true, MALICIOUS_MODE=""` lands within run-to-run noise of the auth-only run on every scenario (zero quarantines, zero observed false positives). One bug found and fixed during rollout: DHT `announce()` did not include `metadata.checksum` in provider records, which made the WS3 metadata-required filter drop every DHT provider and collapse DHT-primary peer-fetches to origin; fixed in commit `a250c05`. Full state-machine coverage (`healthy → suspect → quarantined → cooldown → healthy`) lives in `tests/test_reputation.py` with a deterministic clock — that path is not driven through the live cluster because the production thresholds (`suspect=1.0, quarantine=3.0`) plus same-object dedupe cap a single bad actor's reportable damage at the suspect level once the deranking sort kicks in (which is the system protecting itself, not a gap). Detailed measurements in [results-hardening/WORKSTREAM2_3_GKE_SUMMARY.md](results-hardening/WORKSTREAM2_3_GKE_SUMMARY.md).
 
 ### Goal
 

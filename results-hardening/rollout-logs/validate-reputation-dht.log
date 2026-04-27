@@ -1,13 +1,13 @@
-▶ Workstream 3 validation in p2p-coordinator (target=peer-a1)
+▶ Workstream 3 validation in p2p-dht (target=peer-a1)
 
 1. Set peer-a1 MALICIOUS_MODE=serve_corrupted
-./scripts/validate-reputation.sh: line 141: 27360 Terminated: 15          kubectl -n "$NS" port-forward "svc/$1" "$2:$3" > /dev/null 2>&1
+./scripts/validate-reputation.sh: line 141: 27552 Terminated: 15          kubectl -n "$NS" port-forward "svc/$1" "$2:$3" > /dev/null 2>&1
   ✓ peer-a1 rolled with serve_corrupted
 
 2. Trigger fetches that exercise the malicious peer
-  object 1: ws3-validate-obj-1777256321-27338-1
-  object 2: ws3-validate-obj-1777256321-27338-2
-  object 3: ws3-validate-obj-1777256321-27338-3
+  object 1: ws3-validate-obj-1777256376-27534-1
+  object 2: ws3-validate-obj-1777256376-27534-2
+  object 3: ws3-validate-obj-1777256376-27534-3
   ✓ fetches issued without HTTP error
 
 3. Poll coordinator /stats: peer-a1 should reach suspect or quarantined
@@ -16,20 +16,20 @@
 
 4. Provider sort deprioritises peer-a1
 {
-  "object_id": "ws3-validate-obj-1777256321-27338-3",
+  "object_id": "ws3-validate-obj-1777256376-27534-3",
   "providers": [
-    "http://peer-b1.p2p-coordinator.svc.cluster.local:7000",
-    "http://peer-a1.p2p-coordinator.svc.cluster.local:7000"
+    "http://peer-b1.p2p-dht.svc.cluster.local:7000",
+    "http://peer-a1.p2p-dht.svc.cluster.local:7000"
   ],
   "metadata": {
-    "object_id": "ws3-validate-obj-1777256321-27338-3",
-    "checksum": "6ed2f6851015e3c89fc9862e18b768b6951a6409a06151933f9969d4e349e36d",
+    "object_id": "ws3-validate-obj-1777256376-27534-3",
+    "checksum": "b7d4ce5e921b7d041aeb3bdc0d2ed950c7a5880ff4507499e82eaa0ce66418c4",
     "size_bytes": 1048576,
     "version": "1",
     "cacheability": "immutable",
     "max_age_seconds": null,
     "expires_at": null,
-    "etag": "6ed2f6851015e3c89fc9862e18b768b6951a6409a06151933f9969d4e349e36d",
+    "etag": "b7d4ce5e921b7d041aeb3bdc0d2ed950c7a5880ff4507499e82eaa0ce66418c4",
     "visibility": "public",
     "allowed_groups": [],
     "owner": null
@@ -40,10 +40,10 @@
 5. Availability preserved (peer-b1 fetch still works)
 {
   "status": "success",
-  "object_id": "ws3-validate-obj-1777256321-27338-3",
+  "object_id": "ws3-validate-obj-1777256376-27534-3",
   "source": "cache",
   "size": 1048576,
-  "latency_ms": 0.3469698131084442,
+  "latency_ms": 0.22503011859953403,
   "candidate_count": 0,
   "provider": "peer-b1"
 }
