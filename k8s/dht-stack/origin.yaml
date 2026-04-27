@@ -17,7 +17,7 @@ spec:
         building: a
       containers:
       - name: origin
-        image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/origin:v1
+        image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/origin:a250c05
         ports:
         - containerPort: 8001
         envFrom:

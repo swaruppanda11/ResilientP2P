@@ -18,7 +18,7 @@ spec:
         building: b
       containers:
       - name: peer
-        image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/dht-peer:v1
+        image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/dht-peer:a250c05
         ports:
         - containerPort: 7000
           protocol: TCP

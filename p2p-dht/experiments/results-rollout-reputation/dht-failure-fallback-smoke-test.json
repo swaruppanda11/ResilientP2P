@@ -1,0 +1,219 @@
+{
+  "scenario": "DHT Failure Fallback Smoke Test",
+  "description": "Warm an object through the DHT path, stop the bootstrap service, then verify coordinator fallback behavior for warm and cold requests.",
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
+  "requested_duration_seconds": null,
+  "actual_duration_seconds": 15.994481542002177,
+  "event_count": 5,
+  "events": [
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "fallback-smoke-1",
+      "scheduled_at_seconds": 0.0,
+      "actual_started_seconds": 0.00895699999819044,
+      "runner_latency_ms": 425.3662919945782,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-dht.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 211.66898193769157,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "kill",
+      "service": "dht-bootstrap",
+      "scheduled_at_seconds": 1.0,
+      "actual_started_seconds": 1.0012768339947797,
+      "status": "stopped"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "fallback-smoke-1",
+      "scheduled_at_seconds": 3.0,
+      "actual_started_seconds": 3.2978791250061477,
+      "runner_latency_ms": 220.89775001222733,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1.p2p-dht.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 104.32318202219903,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "fallback-new-object-1",
+      "scheduled_at_seconds": 3.0,
+      "actual_started_seconds": 3.5188622499990743,
+      "runner_latency_ms": 226.0607080097543,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-dht.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 191.9967159628868,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "restart",
+      "service": "dht-bootstrap",
+      "scheduled_at_seconds": 4.0,
+      "actual_started_seconds": 4.001237208998646,
+      "status": "restarted"
+    }
+  ],
+  "summary": {
+    "total_events": 5,
+    "fetch_count": 3,
+    "successful_fetch_count": 3,
+    "failed_fetch_count": 0,
+    "success_rate": 1.0,
+    "source_counts": {
+      "origin": 2,
+      "peer": 1
+    },
+    "bytes_by_source": {
+      "origin": 2097152,
+      "peer": 1048576
+    },
+    "service_latency_ms": {
+      "min": 104.32318202219903,
+      "mean": 169.3296266409258,
+      "median": 191.9967159628868,
+      "p95": 209.7017553402111,
+      "max": 211.66898193769157
+    },
+    "runner_latency_ms": {
+      "min": 220.89775001222733,
+      "mean": 290.77491667218663,
+      "median": 226.0607080097543,
+      "p95": 405.4357335960958,
+      "max": 425.3662919945782
+    },
+    "average_candidate_count": 0.3333333333333333
+  },
+  "peer_stats": {
+    "peer-a1": {
+      "status": "ok",
+      "service": "dht-peer:peer-a1",
+      "peer_id": "peer-a1",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 1,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-a2": {
+      "status": "ok",
+      "service": "dht-peer:peer-a2",
+      "peer_id": "peer-a2",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 0,
+      "cache_object_count": 0,
+      "cache_hit_count": 0,
+      "cache_miss_count": 0,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-b1": {
+      "status": "ok",
+      "service": "dht-peer:peer-b1",
+      "peer_id": "peer-b1",
+      "location_id": "Building-B",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 2097152,
+      "cache_object_count": 2,
+      "cache_hit_count": 0,
+      "cache_miss_count": 2,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    }
+  },
+  "coordinator_stats": {
+    "status": "ok",
+    "service": "coordinator",
+    "peer_count": 3,
+    "object_count": 2,
+    "provider_entries": 3,
+    "max_providers_per_lookup": 3,
+    "peer_timeout_seconds": 30,
+    "provider_selection_policy": "locality_then_load",
+    "total_upload_requests": 1,
+    "total_upload_bytes": 1048576,
+    "peer_loads": [
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 1,
+        "total_upload_bytes": 1048576,
+        "last_transfer_at": "2026-04-26T23:54:17.629324"
+      },
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      },
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      }
+    ],
+    "peer_reputations": []
+  },
+  "generated_from": {
+    "request_profiles": [],
+    "churn_profiles": [],
+    "steps": [
+      {
+        "action": "fetch",
+        "peer": "peer-a1",
+        "object_id": "fallback-smoke-1"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "kill",
+        "service": "dht-bootstrap"
+      },
+      {
+        "action": "wait",
+        "seconds": 2
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-b1",
+        "object_id": "fallback-smoke-1"
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-b1",
+        "object_id": "fallback-new-object-1"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "restart",
+        "service": "dht-bootstrap",
+        "wait_after_seconds": 8
+      }
+    ]
+  }
+}

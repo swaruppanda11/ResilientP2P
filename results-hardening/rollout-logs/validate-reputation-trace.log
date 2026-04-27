@@ -1,0 +1,295 @@
++ set -euo pipefail
++ NS=p2p-coordinator
++ TARGET_PEER=peer-a1
++ VERBOSE=false
++ [[ 3 -gt 0 ]]
++ case "$1" in
++ NS=p2p-coordinator
++ shift 2
++ [[ 1 -gt 0 ]]
++ case "$1" in
++ VERBOSE=true
++ shift
++ [[ 0 -gt 0 ]]
++ [[ -t 1 ]]
++ G=
++ R=
++ Y=
++ B=
++ N=
++ pass=0
++ fail=0
++ for bin in kubectl jq curl
++ command -v kubectl
++ for bin in kubectl jq curl
++ command -v jq
++ for bin in kubectl jq curl
++ command -v curl
++ kubectl -n p2p-coordinator get deploy/coordinator
++ kubectl -n p2p-coordinator get deploy/peer-a1
+++ kubectl -n p2p-coordinator get cm p2p-common-config -o 'jsonpath={.data.REPUTATION_ENABLED}'
++ REP_ENABLED=true
++ [[ true != \t\r\u\e ]]
+++ kubectl -n p2p-coordinator get secret p2p-auth-token -o 'jsonpath={.data.AUTH_TOKEN}'
+++ base64 -d
++ TOKEN=dSw8wVmuynpWXysMG9EBbayEgxZdSExMl5DnUNH1asM
++ [[ -z dSw8wVmuynpWXysMG9EBbayEgxZdSExMl5DnUNH1asM ]]
++ printf '▶ Workstream 3 validation in p2p-coordinator (target=peer-a1)\n'
+▶ Workstream 3 validation in p2p-coordinator (target=peer-a1)
+++ kubectl -n p2p-coordinator get deploy/peer-a1 -o 'jsonpath={.spec.template.spec.containers[0].env[?(@.name=="MALICIOUS_MODE")].value}'
++ ORIGINAL_MODE=normal
++ [[ -z normal ]]
++ PF_PIDS=()
++ trap cleanup EXIT
++ start_pf coordinator 18000 8000
++ PF_PIDS+=("$!")
++ start_pf peer-a1 17001 7000
++ kubectl -n p2p-coordinator port-forward svc/coordinator 18000:8000
++ PF_PIDS+=("$!")
++ start_pf peer-a2 17002 7000
++ kubectl -n p2p-coordinator port-forward svc/peer-a1 17001:7000
++ PF_PIDS+=("$!")
++ start_pf peer-b1 17003 7000
++ kubectl -n p2p-coordinator port-forward svc/peer-a2 17002:7000
++ PF_PIDS+=("$!")
++ for endpoint in '"http://localhost:18000/health"' '"http://localhost:17001/health"' '"http://localhost:17002/health"' '"http://localhost:17003/health"'
++ for _ in '{1..30}'
++ curl -sf -o /dev/null http://localhost:18000/health
++ kubectl -n p2p-coordinator port-forward svc/peer-b1 17003:7000
++ sleep 0.3
++ for _ in '{1..30}'
++ curl -sf -o /dev/null http://localhost:18000/health
++ break
++ for endpoint in '"http://localhost:18000/health"' '"http://localhost:17001/health"' '"http://localhost:17002/health"' '"http://localhost:17003/health"'
++ for _ in '{1..30}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ break
++ for endpoint in '"http://localhost:18000/health"' '"http://localhost:17001/health"' '"http://localhost:17002/health"' '"http://localhost:17003/health"'
++ for _ in '{1..30}'
++ curl -sf -o /dev/null http://localhost:17002/health
++ break
++ for endpoint in '"http://localhost:18000/health"' '"http://localhost:17001/health"' '"http://localhost:17002/health"' '"http://localhost:17003/health"'
++ for _ in '{1..30}'
++ curl -sf -o /dev/null http://localhost:17003/health
++ break
++ printf '\n1. Set %s MALICIOUS_MODE=serve_corrupted\n' peer-a1
+
+1. Set peer-a1 MALICIOUS_MODE=serve_corrupted
++ kubectl -n p2p-coordinator set env deploy/peer-a1 MALICIOUS_MODE=serve_corrupted
++ kubectl -n p2p-coordinator rollout status deploy/peer-a1 --timeout=90s
++ target_port=17001
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ for _ in '{1..60}'
++ curl -sf -o /dev/null http://localhost:17001/health
++ sleep 0.5
++ check 'peer-a1 rolled with serve_corrupted' true
++ local 'label=peer-a1 rolled with serve_corrupted'
++ shift
++ true
++ printf '  ✓ %s\n' 'peer-a1 rolled with serve_corrupted'
+  ✓ peer-a1 rolled with serve_corrupted
++ pass=1
++ printf '\n2. Trigger fetches that exercise the malicious peer\n'
+
+2. Trigger fetches that exercise the malicious peer
+++ date +%s
++ OBJ=ws3-validate-obj-1777252244-21081
++ echo '  using object_id: ws3-validate-obj-1777252244-21081'
+  using object_id: ws3-validate-obj-1777252244-21081
++ auth_curl -o /dev/null http://localhost:17003/trigger-fetch/ws3-validate-obj-1777252244-21081
++ curl -s -H 'Authorization: Bearer dSw8wVmuynpWXysMG9EBbayEgxZdSExMl5DnUNH1asM' -H 'X-Peer-Id: validator' -H 'X-Peer-Group: campus' -o /dev/null http://localhost:17003/trigger-fetch/ws3-validate-obj-1777252244-21081
++ auth_curl -o /dev/null http://localhost:17001/trigger-fetch/ws3-validate-obj-1777252244-21081
++ curl -s -H 'Authorization: Bearer dSw8wVmuynpWXysMG9EBbayEgxZdSExMl5DnUNH1asM' -H 'X-Peer-Id: validator' -H 'X-Peer-Group: campus' -o /dev/null http://localhost:17001/trigger-fetch/ws3-validate-obj-1777252244-21081
++ cleanup
++ for pid in '"${PF_PIDS[@]:-}"'
++ kill 21098
++ for pid in '"${PF_PIDS[@]:-}"'
++ kill 21099
++ true
++ for pid in '"${PF_PIDS[@]:-}"'
++ kill 21100
++ for pid in '"${PF_PIDS[@]:-}"'
++ kill 21101
++ wait
++ restore_peer
++ printf '\n↺ Reverting %s MALICIOUS_MODE → %s\n' peer-a1 normal
+
+↺ Reverting peer-a1 MALICIOUS_MODE → normal
++ kubectl -n p2p-coordinator set env deploy/peer-a1 MALICIOUS_MODE=normal
++ kubectl -n p2p-coordinator rollout status deploy/peer-a1 --timeout=60s

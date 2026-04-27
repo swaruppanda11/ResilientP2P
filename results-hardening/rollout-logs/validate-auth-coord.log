@@ -1,0 +1,20 @@
+▶ Validating auth in namespace p2p-coordinator (AUTH_MODE=shared_token)
+
+1. /health is public
+  ✓ coordinator /health → 200 without auth
+  ✓ peer-a1 /health → 200 without auth
+
+2. Gated endpoints reject bad auth
+  ✓ coordinator /stats without token → 401
+  ✓ coordinator /stats with WRONG token → 401
+  ✓ peer-a1 /stats without token → 401
+
+3. Valid token → 200 and identity attribution in logs
+  ✓ coordinator /lookup with valid token → 200
+  ✗ coordinator logs attribute the call to claimed X-Peer-Id
+  ✓ peer-a1 /stats with valid token → 200
+
+4. Runner preflight fails loudly without AUTH_TOKEN
+  ✗ runner exits with 'Cluster requires AUTH_TOKEN' message
+
+Summary: 7 passed, 2 failed

@@ -1,0 +1,489 @@
+{
+  "seed": 42,
+  "orchestrator": "kubernetes",
+  "namespace": "p2p-dht",
+  "coordinator_url": "http://localhost:9000",
+  "origin_url": "http://localhost:9004",
+  "results_dir": "results-rollout-auth",
+  "bootstrap_wait_seconds": 10,
+  "service_ready_timeout_seconds": 90,
+  "reset_stack_before_each_scenario": true,
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
+  "peer_map": {
+    "peer-a1": {
+      "url": "http://localhost:9001",
+      "service": "peer-a1",
+      "location_id": "Building-A"
+    },
+    "peer-a2": {
+      "url": "http://localhost:9002",
+      "service": "peer-a2",
+      "location_id": "Building-A"
+    },
+    "peer-b1": {
+      "url": "http://localhost:9003",
+      "service": "peer-b1",
+      "location_id": "Building-B"
+    }
+  },
+  "scenarios": [
+    {
+      "name": "Auth Enforcement Smoke Test",
+      "description": "End-to-end verification that an authenticated stack (AUTH_MODE=shared_token, AUTH_TOKEN wired via Secret + runner env) passes an auth-gated fetch path. Ran as a separate scenario so its result JSON lives alongside the other Workstream 2 artifacts in results-k8s-hardening/. Visibility filtering is covered by the pytest suite; this scenario only validates the bearer-token plumbing.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "auth-smoke-object"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "auth-smoke-object"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "auth-smoke-object"
+        }
+      ]
+    },
+    {
+      "name": "Explicit Locality Smoke Test",
+      "description": "Sanity check: peer-a1 fetches from origin, peer-a2 should find it via DHT (same building), peer-b1 via DHT (cross-building).",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "lecture-1-video"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "lecture-1-video"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "lecture-1-video"
+        }
+      ]
+    },
+    {
+      "name": "Course Burst Workload",
+      "description": "Students in the same course request overlapping content during a short burst window. Measures DHT cache hit rate and locality effectiveness.",
+      "duration_seconds": 18,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": [
+            "peer-a1",
+            "peer-a2"
+          ],
+          "objects": [
+            {
+              "id": "csci5673-assignment-1",
+              "weight": 5
+            },
+            {
+              "id": "csci5673-lecture-5",
+              "weight": 3
+            },
+            {
+              "id": "csci5673-reading-2",
+              "weight": 2
+            }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 8,
+          "count": 16
+        },
+        {
+          "kind": "random_uniform",
+          "peers": [
+            "peer-b1"
+          ],
+          "objects": [
+            {
+              "id": "campus-news",
+              "weight": 2
+            },
+            {
+              "id": "csci5673-assignment-1",
+              "weight": 1
+            }
+          ],
+          "start_seconds": 4,
+          "end_seconds": 16,
+          "count": 6
+        }
+      ]
+    },
+    {
+      "name": "Burst With Independent Churn",
+      "description": "One peer crashes during an active burst and rejoins later. Measures DHT resilience: can surviving peers still serve content? Does the rejoining peer re-populate the DHT?",
+      "duration_seconds": 24,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": [
+            "peer-a1",
+            "peer-a2",
+            "peer-b1"
+          ],
+          "objects": [
+            {
+              "id": "midterm-review",
+              "weight": 4
+            },
+            {
+              "id": "practice-set",
+              "weight": 3
+            },
+            {
+              "id": "formula-sheet",
+              "weight": 1
+            }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 14,
+          "count": 20
+        }
+      ],
+      "churn": [
+        {
+          "kind": "independent",
+          "peers": [
+            "peer-a2",
+            "peer-b1"
+          ],
+          "count": 1,
+          "start_seconds": 5,
+          "end_seconds": 9,
+          "downtime_seconds": 6
+        }
+      ]
+    },
+    {
+      "name": "Correlated Class Exit Churn",
+      "description": "Two Building-A peers leave simultaneously (class ends) then return. Key question: does DHT degrade gracefully and does the coordinator fallback maintain availability?",
+      "duration_seconds": 26,
+      "requests": [
+        {
+          "kind": "course_burst",
+          "peers": [
+            "peer-a1",
+            "peer-a2"
+          ],
+          "objects": [
+            {
+              "id": "project-demo",
+              "weight": 4
+            },
+            {
+              "id": "lab-starter",
+              "weight": 2
+            }
+          ],
+          "start_seconds": 0,
+          "duration_seconds": 10,
+          "count": 12
+        },
+        {
+          "kind": "random_uniform",
+          "peers": [
+            "peer-a1",
+            "peer-a2",
+            "peer-b1"
+          ],
+          "objects": [
+            {
+              "id": "project-demo",
+              "weight": 3
+            },
+            {
+              "id": "department-calendar",
+              "weight": 1
+            }
+          ],
+          "start_seconds": 10,
+          "end_seconds": 22,
+          "count": 10
+        }
+      ],
+      "churn": [
+        {
+          "kind": "correlated",
+          "events": [
+            {
+              "at_seconds": 11,
+              "peers": [
+                "peer-a1",
+                "peer-a2"
+              ],
+              "downtime_seconds": 6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DHT Failure Fallback Smoke Test",
+      "description": "Warm an object through the DHT path, stop the bootstrap service, then verify coordinator fallback behavior for warm and cold requests.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "fallback-smoke-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "kill",
+          "service": "dht-bootstrap"
+        },
+        {
+          "action": "wait",
+          "seconds": 2
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "fallback-smoke-1"
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "fallback-new-object-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "restart",
+          "service": "dht-bootstrap",
+          "wait_after_seconds": 8
+        }
+      ]
+    },
+    {
+      "name": "DHT Partition Fallback Test",
+      "description": "Inject full packet loss on the DHT bootstrap pod to emulate DHT control-plane partition and observe coordinator fallback.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "partition-fallback-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "disconnect",
+          "service": "dht-bootstrap"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "partition-fallback-1"
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "partition-new-object-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "connect",
+          "service": "dht-bootstrap",
+          "wait_after_seconds": 3
+        }
+      ]
+    },
+    {
+      "name": "DHT Timeout Fallback Test",
+      "description": "Inject high network delay on peer-a1 to stretch DHT lookups beyond the timeout budget and verify coordinator fallback.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "timeout-fallback-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "delay",
+          "peer": "peer-a1",
+          "delay_ms": 1200
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "timeout-fallback-1"
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "timeout-new-object-1"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "clear_delay",
+          "peer": "peer-a1"
+        },
+        {
+          "action": "wait",
+          "seconds": 2
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Object Explicit Invalidation",
+      "description": "Warm a mutable object, invalidate it, then request a newer version and verify the stale peer copy is not served.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "dynamic-syllabus",
+          "version": "1",
+          "cacheability": "immutable"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "dynamic-syllabus",
+          "version": "1",
+          "cacheability": "immutable"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "invalidate",
+          "object_id": "dynamic-syllabus"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "dynamic-syllabus",
+          "version": "2",
+          "cacheability": "immutable"
+        }
+      ]
+    },
+    {
+      "name": "TTL Expiry Revalidation",
+      "description": "Cache a short-lived object and verify that the next request after expiry refetches instead of using a stale provider.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "ttl-announcement",
+          "version": "1",
+          "cacheability": "ttl",
+          "max_age_seconds": 1
+        },
+        {
+          "action": "wait",
+          "seconds": 4
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "ttl-announcement",
+          "version": "1",
+          "cacheability": "ttl",
+          "max_age_seconds": 1
+        }
+      ]
+    },
+    {
+      "name": "Prefix Invalidation Smoke Test",
+      "description": "Invalidate a prefix and verify a subsequent request for a matching object refetches from origin.",
+      "steps": [
+        {
+          "action": "fetch",
+          "peer": "peer-a1",
+          "object_id": "mutable-course-unit-1",
+          "version": "1",
+          "cacheability": "immutable"
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-a2",
+          "object_id": "mutable-course-unit-2",
+          "version": "1",
+          "cacheability": "immutable"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "invalidate_prefix",
+          "prefix": "mutable-course-"
+        },
+        {
+          "action": "wait",
+          "seconds": 1
+        },
+        {
+          "action": "fetch",
+          "peer": "peer-b1",
+          "object_id": "mutable-course-unit-1",
+          "version": "2",
+          "cacheability": "immutable"
+        }
+      ]
+    }
+  ]
+}

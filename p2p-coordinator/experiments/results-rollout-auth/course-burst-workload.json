@@ -1,0 +1,499 @@
+{
+  "scenario": "Course Burst Workload",
+  "description": "Students in the same course request overlapping content during a short burst window.",
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
+  "requested_duration_seconds": 18,
+  "actual_duration_seconds": 14.138217499988968,
+  "event_count": 22,
+  "events": [
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "csci5673-assignment-1",
+      "scheduled_at_seconds": 0.25426143585426875,
+      "actual_started_seconds": 0.25537983399408404,
+      "runner_latency_ms": 297.7514170052018,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-coordinator.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 226.6760221682489,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "csci5673-assignment-1",
+      "scheduled_at_seconds": 1.2438359984942524,
+      "actual_started_seconds": 1.24504154198803,
+      "runner_latency_ms": 135.08375000674278,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1.p2p-coordinator.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 71.11869705840945,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "csci5673-assignment-1",
+      "scheduled_at_seconds": 1.277274531015121,
+      "actual_started_seconds": 1.3801693339919439,
+      "runner_latency_ms": 21.748291997937486,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a2",
+      "candidate_count": 0,
+      "service_latency_ms": 0.2733399160206318,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "csci5673-lecture-5",
+      "scheduled_at_seconds": 1.9591348304278098,
+      "actual_started_seconds": 1.9594102089904482,
+      "runner_latency_ms": 202.34650000929832,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-coordinator.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 168.96482300944626,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "csci5673-lecture-5",
+      "scheduled_at_seconds": 2.345426251256743,
+      "actual_started_seconds": 2.346563999992213,
+      "runner_latency_ms": 76.56145800137892,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1.p2p-coordinator.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 50.392367877066135,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "csci5673-reading-2",
+      "scheduled_at_seconds": 3.039418405098699,
+      "actual_started_seconds": 3.040173583998694,
+      "runner_latency_ms": 188.05420900753234,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-coordinator.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 162.57386398501694,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "csci5673-lecture-5",
+      "scheduled_at_seconds": 4.042842304826899,
+      "actual_started_seconds": 4.044517916991026,
+      "runner_latency_ms": 24.692042003152892,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.40113995783030987,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "csci5673-assignment-1",
+      "scheduled_at_seconds": 4.289824731637606,
+      "actual_started_seconds": 4.290518499998143,
+      "runner_latency_ms": 29.578875008155592,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a2",
+      "candidate_count": 0,
+      "service_latency_ms": 0.3559801261872053,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "csci5673-lecture-5",
+      "scheduled_at_seconds": 4.71412547100727,
+      "actual_started_seconds": 4.715390499986825,
+      "runner_latency_ms": 28.79195900459308,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.42801001109182835,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "csci5673-lecture-5",
+      "scheduled_at_seconds": 4.8298082509351286,
+      "actual_started_seconds": 4.830945958994562,
+      "runner_latency_ms": 26.705291005782783,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.3300299867987633,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "csci5673-lecture-5",
+      "scheduled_at_seconds": 5.11541438766307,
+      "actual_started_seconds": 5.116623958994751,
+      "runner_latency_ms": 28.869333997135982,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.46558002941310406,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "csci5673-lecture-5",
+      "scheduled_at_seconds": 5.41359589938329,
+      "actual_started_seconds": 5.414786708992324,
+      "runner_latency_ms": 26.904958009254187,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.3530099056661129,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "csci5673-lecture-5",
+      "scheduled_at_seconds": 5.636574689719388,
+      "actual_started_seconds": 5.637749083995004,
+      "runner_latency_ms": 25.197374998242594,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.3693301696330309,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "csci5673-assignment-1",
+      "scheduled_at_seconds": 5.728156903379228,
+      "actual_started_seconds": 5.729342624996207,
+      "runner_latency_ms": 24.499124992871657,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a2",
+      "candidate_count": 0,
+      "service_latency_ms": 0.33549987711012363,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "campus-news",
+      "scheduled_at_seconds": 6.053663778377164,
+      "actual_started_seconds": 6.054896166999242,
+      "runner_latency_ms": 272.6282500079833,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-coordinator.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 197.50294997356832,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "csci5673-reading-2",
+      "scheduled_at_seconds": 6.184546726309535,
+      "actual_started_seconds": 6.327566833992023,
+      "runner_latency_ms": 102.31716600537766,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a2.p2p-coordinator.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 77.29393802583218,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "csci5673-assignment-1",
+      "scheduled_at_seconds": 6.931869334042157,
+      "actual_started_seconds": 6.933042041986482,
+      "runner_latency_ms": 28.48949999315664,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-a2",
+      "candidate_count": 0,
+      "service_latency_ms": 0.24148006923496723,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "csci5673-assignment-1",
+      "scheduled_at_seconds": 8.263248402730259,
+      "actual_started_seconds": 8.264242124991142,
+      "runner_latency_ms": 142.2408750077011,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a2.p2p-coordinator.svc.cluster.local:7000",
+      "candidate_count": 2,
+      "service_latency_ms": 115.80370995216072,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "csci5673-assignment-1",
+      "scheduled_at_seconds": 8.553465301091773,
+      "actual_started_seconds": 8.554611166997347,
+      "runner_latency_ms": 25.073290991713293,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.3631401341408491,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "campus-news",
+      "scheduled_at_seconds": 11.628213331172802,
+      "actual_started_seconds": 11.629300583997974,
+      "runner_latency_ms": 28.45099999103695,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.3892399836331606,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "campus-news",
+      "scheduled_at_seconds": 12.202571986440006,
+      "actual_started_seconds": 12.203562583992607,
+      "runner_latency_ms": 25.396750002983026,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.3699490334838629,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "campus-news",
+      "scheduled_at_seconds": 14.114223042277715,
+      "actual_started_seconds": 14.115392041989253,
+      "runner_latency_ms": 22.79412500502076,
+      "status": "success",
+      "source": "cache",
+      "provider": "peer-b1",
+      "candidate_count": 0,
+      "service_latency_ms": 0.22938009351491928,
+      "size": 1048576,
+      "request_params": {}
+    }
+  ],
+  "summary": {
+    "total_events": 22,
+    "fetch_count": 22,
+    "successful_fetch_count": 22,
+    "failed_fetch_count": 0,
+    "success_rate": 1.0,
+    "source_counts": {
+      "origin": 4,
+      "peer": 4,
+      "cache": 14
+    },
+    "bytes_by_source": {
+      "origin": 4194304,
+      "peer": 4194304,
+      "cache": 14680064
+    },
+    "service_latency_ms": {
+      "min": 0.22938009351491928,
+      "mean": 48.874158242886715,
+      "median": 0.39518997073173523,
+      "p95": 196.0760436253622,
+      "max": 226.6760221682489
+    },
+    "runner_latency_ms": {
+      "min": 21.748291997937486,
+      "mean": 81.09888827510241,
+      "median": 28.64072949887486,
+      "p95": 269.114162508049,
+      "max": 297.7514170052018
+    },
+    "average_candidate_count": 0.22727272727272727
+  },
+  "peer_stats": {
+    "peer-a1": {
+      "status": "ok",
+      "service": "peer:peer-a1",
+      "peer_id": "peer-a1",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 3145728,
+      "cache_object_count": 3,
+      "cache_hit_count": 8,
+      "cache_miss_count": 3,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-a2": {
+      "status": "ok",
+      "service": "peer:peer-a2",
+      "peer_id": "peer-a2",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 3145728,
+      "cache_object_count": 3,
+      "cache_hit_count": 6,
+      "cache_miss_count": 3,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-b1": {
+      "status": "ok",
+      "service": "peer:peer-b1",
+      "peer_id": "peer-b1",
+      "location_id": "Building-B",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 2097152,
+      "cache_object_count": 2,
+      "cache_hit_count": 4,
+      "cache_miss_count": 2,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    }
+  },
+  "coordinator_stats": {
+    "status": "ok",
+    "service": "coordinator",
+    "peer_count": 3,
+    "object_count": 4,
+    "provider_entries": 8,
+    "max_providers_per_lookup": 3,
+    "peer_timeout_seconds": 30,
+    "provider_selection_policy": "locality_then_load",
+    "total_upload_requests": 4,
+    "total_upload_bytes": 4194304,
+    "peer_loads": [
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 2,
+        "total_upload_bytes": 2097152,
+        "last_transfer_at": "2026-04-26T21:26:12.559791"
+      },
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 2,
+        "total_upload_bytes": 2097152,
+        "last_transfer_at": "2026-04-26T21:26:18.534982"
+      },
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      }
+    ],
+    "peer_reputations": []
+  },
+  "generated_from": {
+    "request_profiles": [
+      {
+        "kind": "course_burst",
+        "peers": [
+          "peer-a1",
+          "peer-a2"
+        ],
+        "objects": [
+          {
+            "id": "csci5673-assignment-1",
+            "weight": 5
+          },
+          {
+            "id": "csci5673-lecture-5",
+            "weight": 3
+          },
+          {
+            "id": "csci5673-reading-2",
+            "weight": 2
+          }
+        ],
+        "start_seconds": 0,
+        "duration_seconds": 8,
+        "count": 16
+      },
+      {
+        "kind": "random_uniform",
+        "peers": [
+          "peer-b1"
+        ],
+        "objects": [
+          {
+            "id": "campus-news",
+            "weight": 2
+          },
+          {
+            "id": "csci5673-assignment-1",
+            "weight": 1
+          }
+        ],
+        "start_seconds": 4,
+        "end_seconds": 16,
+        "count": 6
+      }
+    ],
+    "churn_profiles": [],
+    "steps": []
+  }
+}

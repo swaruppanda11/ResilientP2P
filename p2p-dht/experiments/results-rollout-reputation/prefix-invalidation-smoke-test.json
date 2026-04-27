@@ -1,0 +1,226 @@
+{
+  "scenario": "Prefix Invalidation Smoke Test",
+  "description": "Invalidate a prefix and verify a subsequent request for a matching object refetches from origin.",
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
+  "requested_duration_seconds": null,
+  "actual_duration_seconds": 2.2882032500056084,
+  "event_count": 4,
+  "events": [
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "mutable-course-unit-1",
+      "scheduled_at_seconds": 0.0,
+      "actual_started_seconds": 0.009253708005417138,
+      "runner_latency_ms": 318.3566670049913,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-dht.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 205.9086230583489,
+      "size": 1048576,
+      "request_params": {
+        "version": "1",
+        "cacheability": "immutable"
+      }
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-a2",
+      "object_id": "mutable-course-unit-2",
+      "scheduled_at_seconds": 0.0,
+      "actual_started_seconds": 0.32767587499984074,
+      "runner_latency_ms": 291.1618750076741,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-dht.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 181.96974392049015,
+      "size": 1048576,
+      "request_params": {
+        "version": "1",
+        "cacheability": "immutable"
+      }
+    },
+    {
+      "action": "invalidate_prefix",
+      "prefix": "mutable-course-",
+      "scheduled_at_seconds": 1.0,
+      "actual_started_seconds": 1.0011767499963753,
+      "status": "issued",
+      "response": {
+        "status": "invalidated",
+        "prefix": "mutable-course-",
+        "object_ids": [
+          "mutable-course-unit-1",
+          "mutable-course-unit-2"
+        ],
+        "removed_provider_entries": 2,
+        "notified_peers": 2
+      }
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "mutable-course-unit-1",
+      "scheduled_at_seconds": 2.0,
+      "actual_started_seconds": 2.0007807500078343,
+      "runner_latency_ms": 287.37337500206195,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-dht.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 182.98526504077017,
+      "size": 1048576,
+      "request_params": {
+        "version": "2",
+        "cacheability": "immutable"
+      }
+    }
+  ],
+  "summary": {
+    "total_events": 4,
+    "fetch_count": 3,
+    "successful_fetch_count": 3,
+    "failed_fetch_count": 0,
+    "success_rate": 1.0,
+    "source_counts": {
+      "origin": 3
+    },
+    "bytes_by_source": {
+      "origin": 3145728
+    },
+    "service_latency_ms": {
+      "min": 181.96974392049015,
+      "mean": 190.28787733986974,
+      "median": 182.98526504077017,
+      "p95": 203.61628725659102,
+      "max": 205.9086230583489
+    },
+    "runner_latency_ms": {
+      "min": 287.37337500206195,
+      "mean": 298.96397233824246,
+      "median": 291.1618750076741,
+      "p95": 315.6371878052596,
+      "max": 318.3566670049913
+    },
+    "average_candidate_count": 0
+  },
+  "peer_stats": {
+    "peer-a1": {
+      "status": "ok",
+      "service": "dht-peer:peer-a1",
+      "peer_id": "peer-a1",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 0,
+      "cache_object_count": 0,
+      "cache_hit_count": 0,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-a2": {
+      "status": "ok",
+      "service": "dht-peer:peer-a2",
+      "peer_id": "peer-a2",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 0,
+      "cache_object_count": 0,
+      "cache_hit_count": 0,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-b1": {
+      "status": "ok",
+      "service": "dht-peer:peer-b1",
+      "peer_id": "peer-b1",
+      "location_id": "Building-B",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 0,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    }
+  },
+  "coordinator_stats": {
+    "status": "ok",
+    "service": "coordinator",
+    "peer_count": 3,
+    "object_count": 1,
+    "provider_entries": 1,
+    "max_providers_per_lookup": 3,
+    "peer_timeout_seconds": 30,
+    "provider_selection_policy": "locality_then_load",
+    "total_upload_requests": 0,
+    "total_upload_bytes": 0,
+    "peer_loads": [
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      },
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      },
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      }
+    ],
+    "peer_reputations": []
+  },
+  "generated_from": {
+    "request_profiles": [],
+    "churn_profiles": [],
+    "steps": [
+      {
+        "action": "fetch",
+        "peer": "peer-a1",
+        "object_id": "mutable-course-unit-1",
+        "version": "1",
+        "cacheability": "immutable"
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-a2",
+        "object_id": "mutable-course-unit-2",
+        "version": "1",
+        "cacheability": "immutable"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "invalidate_prefix",
+        "prefix": "mutable-course-"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-b1",
+        "object_id": "mutable-course-unit-1",
+        "version": "2",
+        "cacheability": "immutable"
+      }
+    ]
+  }
+}

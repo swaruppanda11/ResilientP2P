@@ -1,0 +1,18 @@
+▶ Workstream 3 validation in p2p-coordinator (target=peer-a1)
+
+0. Lowering REPUTATION_QUARANTINE_THRESHOLD: 3.0 → 1.0
+
+1. Set peer-a1 MALICIOUS_MODE=serve_corrupted
+./scripts/validate-reputation.sh: line 154: 23545 Terminated: 15          kubectl -n "$NS" port-forward "svc/$1" "$2:$3" > /dev/null 2>&1
+  ✓ peer-a1 rolled with serve_corrupted
+
+2. Trigger fetches that exercise the malicious peer
+  object 1: ws3-validate-obj-1777253515-23520-1
+  object 2: ws3-validate-obj-1777253515-23520-2
+  object 3: ws3-validate-obj-1777253515-23520-3
+  ✓ fetches issued without HTTP error
+
+3. Poll coordinator /stats until peer-a1 is quarantined
+
+↺ Reverting peer-a1 MALICIOUS_MODE → normal
+↺ Restoring REPUTATION_QUARANTINE_THRESHOLD → 3.0

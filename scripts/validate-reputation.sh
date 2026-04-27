@@ -67,6 +67,15 @@ if [[ "$REP_ENABLED" != "true" ]]; then
   exit 2
 fi
 
+# Capture the original quarantine threshold so we can restore it on exit. We
+# temporarily lower it to 1.0 so a single checksum_mismatch report flips the
+# peer to quarantined — once a peer is `suspect`, the provider-deranking
+# logic steers requesters away from it, so racking up multiple reports under
+# normal thresholds is impractical (a feature in production, an obstacle in
+# a deterministic demo).
+ORIGINAL_QUARANTINE_THRESHOLD="$(kubectl -n "$NS" get cm p2p-common-config \
+  -o jsonpath='{.data.REPUTATION_QUARANTINE_THRESHOLD}' 2>/dev/null || echo "3.0")"
+
 TOKEN="$(kubectl -n "$NS" get secret p2p-auth-token \
   -o jsonpath='{.data.AUTH_TOKEN}' 2>/dev/null | base64 -d || true)"
 if [[ -z "$TOKEN" ]]; then
@@ -88,6 +97,12 @@ restore_peer() {
   kubectl -n "$NS" set env deploy/"$TARGET_PEER" \
     "MALICIOUS_MODE=$ORIGINAL_MODE" >/dev/null 2>&1 || true
   kubectl -n "$NS" rollout status deploy/"$TARGET_PEER" --timeout=60s >/dev/null 2>&1 || true
+  printf "${B}↺ Restoring REPUTATION_QUARANTINE_THRESHOLD → %s${N}\n" "$ORIGINAL_QUARANTINE_THRESHOLD"
+  kubectl -n "$NS" patch cm p2p-common-config --type merge \
+    -p "{\"data\":{\"REPUTATION_QUARANTINE_THRESHOLD\":\"${ORIGINAL_QUARANTINE_THRESHOLD}\"}}" \
+    >/dev/null 2>&1 || true
+  kubectl -n "$NS" rollout restart deploy/coordinator >/dev/null 2>&1 || true
+  kubectl -n "$NS" rollout status deploy/coordinator --timeout=60s >/dev/null 2>&1 || true
 }
 cleanup() {
   for pid in "${PF_PIDS[@]:-}"; do kill "$pid" 2>/dev/null || true; done
@@ -101,20 +116,47 @@ start_pf() {
   PF_PIDS+=("$!")
 }
 start_pf coordinator 18000 8000
+start_pf peer-a1     17001 7000
 start_pf peer-a2     17002 7000
 start_pf peer-b1     17003 7000
 
-# Wait for /health on the coordinator.
-for _ in {1..30}; do
-  curl -sf -o /dev/null "http://localhost:18000/health" && break
-  sleep 0.3
+# Wait for /health on every port-forwarded service before proceeding —
+# under `set -e`, a connection-refused curl during the fetch phase would
+# silently kill the script.
+for endpoint in \
+  "http://localhost:18000/health" \
+  "http://localhost:17001/health" \
+  "http://localhost:17002/health" \
+  "http://localhost:17003/health"; do
+  for _ in {1..30}; do
+    curl -sf -o /dev/null "$endpoint" && break
+    sleep 0.3
+  done
 done
+
+# --- Step 0: lower the quarantine threshold to 1.0 so a single report is
+# enough to flip peer-a1 to quarantined (see ORIGINAL_QUARANTINE_THRESHOLD
+# capture above). Restored on exit by restore_peer().
+printf "\n${B}0. Lowering REPUTATION_QUARANTINE_THRESHOLD: %s → 1.0${N}\n" "$ORIGINAL_QUARANTINE_THRESHOLD"
+kubectl -n "$NS" patch cm p2p-common-config --type merge \
+  -p '{"data":{"REPUTATION_QUARANTINE_THRESHOLD":"1.0"}}' >/dev/null
+kubectl -n "$NS" rollout restart deploy/coordinator >/dev/null
+kubectl -n "$NS" rollout status deploy/coordinator --timeout=60s >/dev/null
 
 # --- Step 1: flip target into serve_corrupted, wait for rollout -------------
 printf "\n${B}1. Set %s MALICIOUS_MODE=serve_corrupted${N}\n" "$TARGET_PEER"
 kubectl -n "$NS" set env deploy/"$TARGET_PEER" MALICIOUS_MODE=serve_corrupted >/dev/null
 kubectl -n "$NS" rollout status deploy/"$TARGET_PEER" --timeout=90s >/dev/null
-sleep 2  # give port-forward time to reattach to the new pod
+# Old port-forward to the previous pod is now defunct — kill and restart it
+# pointing at the new pod, then wait for /health.
+target_port=17001  # peer-a1 maps to 17001 by convention above
+pkill -f "kubectl.* port-forward .*svc/${TARGET_PEER} ${target_port}" 2>/dev/null || true
+sleep 1
+start_pf "$TARGET_PEER" "$target_port" 7000
+for _ in {1..60}; do
+  curl -sf -o /dev/null "http://localhost:${target_port}/health" && break
+  sleep 0.5
+done
 check "$TARGET_PEER rolled with serve_corrupted" true
 
 # --- Step 2: drive a fetch from peer-b1 to seed the index, then peer-a2 ----
@@ -125,14 +167,32 @@ auth_curl() {
        -H "X-Peer-Group: campus" "$@"
 }
 
-# Force an honest peer (peer-b1) to fetch first so the canonical metadata
-# lands in the coordinator. Then peer-a2 fetches and is steered toward peer-a1
-# (or peer-b1) — when it hits peer-a1 the bytes are corrupted.
-auth_curl -o /dev/null "http://localhost:17003/trigger-fetch/ws3-validate-obj"
-for _ in 1 2 3 4 5; do
-  auth_curl -o /dev/null "http://localhost:17002/trigger-fetch/ws3-validate-obj"
-  sleep 0.5
+# Drive 3 distinct object_ids — the reputation tracker dedupes
+# (reporter, accused, object_id) triples within a 10-second window, so
+# multiple peer-a2 fetches of the same object only count once. Three fresh
+# objects lets us cross the QUARANTINE_THRESHOLD (default 3.0 with
+# checksum_mismatch weight 1.0).
+RUN_TAG="$(date +%s)-$$"
+for n in 1 2 3; do
+  OBJ="ws3-validate-obj-${RUN_TAG}-${n}"
+  [[ "$VERBOSE" == true ]] && echo "  object $n: $OBJ"
+  # Seed: peer-b1 (cross-building) + peer-a1 (malicious) cache the object.
+  auth_curl -o /dev/null "http://localhost:17003/trigger-fetch/$OBJ" || true
+  auth_curl -o /dev/null "http://localhost:17001/trigger-fetch/$OBJ" || true
+  # Wait for the coordinator's index to settle (publishes are async).
+  for _ in {1..30}; do
+    count=$(auth_curl "http://localhost:18000/lookup/${OBJ}?location_id=Building-A" \
+              | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('providers', [])))" 2>/dev/null || echo 0)
+    [[ "$count" -ge 2 ]] && break
+    sleep 1
+  done
+  # peer-a2 fetches: locality steers it to peer-a1 (same building),
+  # peer-a1 corrupts, peer-a2 detects + reports.
+  auth_curl -o /dev/null "http://localhost:17002/trigger-fetch/$OBJ" || true
+  sleep 1
 done
+# OBJ left set to the last one used so the lookup-exclusion test below
+# checks an object peer-a1 actually advertised.
 check "fetches issued without HTTP error" true
 
 # --- Step 3: poll /stats for quarantine -----------------------------------
@@ -151,7 +211,7 @@ check "$TARGET_PEER reached state=quarantined" bash -c "[[ '$QUARANTINED' == 'tr
 
 # --- Step 4: lookup excludes the quarantined peer --------------------------
 printf "\n${B}4. /lookup excludes %s${N}\n" "$TARGET_PEER"
-PROVIDERS_JSON="$(auth_curl "http://localhost:18000/lookup/ws3-validate-obj?location_id=Building-A")"
+PROVIDERS_JSON="$(auth_curl "http://localhost:18000/lookup/$OBJ?location_id=Building-A")"
 [[ "$VERBOSE" == true ]] && echo "$PROVIDERS_JSON" | jq .
 
 if echo "$PROVIDERS_JSON" | jq -r '.providers[]' | grep -Fq "$TARGET_PEER"; then
@@ -162,7 +222,7 @@ fi
 
 # --- Step 5: subsequent fetch from a clean peer still succeeds -------------
 printf "\n${B}5. Availability preserved (peer-b1 fetch still works)${N}\n"
-RESULT="$(auth_curl "http://localhost:17003/trigger-fetch/ws3-validate-obj")"
+RESULT="$(auth_curl "http://localhost:17003/trigger-fetch/$OBJ")"
 [[ "$VERBOSE" == true ]] && echo "$RESULT" | jq .
 SOURCE="$(echo "$RESULT" | jq -r '.source')"
 check "peer-b1 fetch succeeded (source=cache|peer|origin)" \

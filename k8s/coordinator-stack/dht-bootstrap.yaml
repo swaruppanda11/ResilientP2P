@@ -17,7 +17,7 @@ spec:
         building: a
       containers:
       - name: dht-bootstrap
-        image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/dht-bootstrap:v1
+        image: us-central1-docker.pkg.dev/resilientp2p-492916/resilientp2p/dht-bootstrap:a250c05
         ports:
         - containerPort: 6000
           protocol: UDP

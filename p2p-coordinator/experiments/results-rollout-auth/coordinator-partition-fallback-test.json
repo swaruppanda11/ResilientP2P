@@ -1,0 +1,223 @@
+{
+  "scenario": "Coordinator Partition Fallback Test",
+  "description": "Inject full packet loss on the coordinator pod to force DHT fallback under network partition rather than clean crash.",
+  "topology": {
+    "intra_location_delay_ms": 5,
+    "inter_location_delay_ms": 35,
+    "origin_delay_ms": 120
+  },
+  "requested_duration_seconds": null,
+  "actual_duration_seconds": 14.087119041010737,
+  "event_count": 5,
+  "events": [
+    {
+      "action": "fetch",
+      "peer": "peer-a1",
+      "object_id": "partition-fallback-1",
+      "scheduled_at_seconds": 0.0,
+      "actual_started_seconds": 0.009209333002218045,
+      "runner_latency_ms": 401.6689169948222,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-coordinator.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 243.14130120910704,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "disconnect",
+      "service": "coordinator",
+      "scheduled_at_seconds": 4.0,
+      "actual_started_seconds": 4.002085625004838,
+      "status": "disconnected"
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "partition-fallback-1",
+      "scheduled_at_seconds": 6.0,
+      "actual_started_seconds": 6.001273500005482,
+      "runner_latency_ms": 2289.17062500841,
+      "status": "success",
+      "source": "peer",
+      "provider": "http://peer-a1.p2p-coordinator.svc.cluster.local:7000",
+      "candidate_count": 1,
+      "service_latency_ms": 2114.4401899073273,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "fetch",
+      "peer": "peer-b1",
+      "object_id": "partition-new-object-1",
+      "scheduled_at_seconds": 6.0,
+      "actual_started_seconds": 8.290647833011462,
+      "runner_latency_ms": 2266.1396249895915,
+      "status": "success",
+      "source": "origin",
+      "provider": "http://origin.p2p-coordinator.svc.cluster.local:8001",
+      "candidate_count": 0,
+      "service_latency_ms": 2186.1063609831035,
+      "size": 1048576,
+      "request_params": {}
+    },
+    {
+      "action": "connect",
+      "service": "coordinator",
+      "scheduled_at_seconds": 7.0,
+      "actual_started_seconds": 10.556854541006032,
+      "status": "connected"
+    }
+  ],
+  "summary": {
+    "total_events": 5,
+    "fetch_count": 3,
+    "successful_fetch_count": 3,
+    "failed_fetch_count": 0,
+    "success_rate": 1.0,
+    "source_counts": {
+      "origin": 2,
+      "peer": 1
+    },
+    "bytes_by_source": {
+      "origin": 2097152,
+      "peer": 1048576
+    },
+    "service_latency_ms": {
+      "min": 243.14130120910704,
+      "mean": 1514.5626173665125,
+      "median": 2114.4401899073273,
+      "p95": 2178.939743875526,
+      "max": 2186.1063609831035
+    },
+    "runner_latency_ms": {
+      "min": 401.6689169948222,
+      "mean": 1652.3263889976079,
+      "median": 2266.1396249895915,
+      "p95": 2286.867525006528,
+      "max": 2289.17062500841
+    },
+    "average_candidate_count": 0.3333333333333333
+  },
+  "peer_stats": {
+    "peer-a1": {
+      "status": "ok",
+      "service": "peer:peer-a1",
+      "peer_id": "peer-a1",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 1048576,
+      "cache_object_count": 1,
+      "cache_hit_count": 1,
+      "cache_miss_count": 1,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-a2": {
+      "status": "ok",
+      "service": "peer:peer-a2",
+      "peer_id": "peer-a2",
+      "location_id": "Building-A",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 0,
+      "cache_object_count": 0,
+      "cache_hit_count": 0,
+      "cache_miss_count": 0,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    },
+    "peer-b1": {
+      "status": "ok",
+      "service": "peer:peer-b1",
+      "peer_id": "peer-b1",
+      "location_id": "Building-B",
+      "cache_capacity_bytes": 10485760,
+      "cache_size_bytes": 2097152,
+      "cache_object_count": 2,
+      "cache_hit_count": 0,
+      "cache_miss_count": 2,
+      "cache_eviction_count": 0,
+      "cache_rejected_write_count": 0
+    }
+  },
+  "coordinator_stats": {
+    "status": "ok",
+    "service": "coordinator",
+    "peer_count": 3,
+    "object_count": 2,
+    "provider_entries": 3,
+    "max_providers_per_lookup": 3,
+    "peer_timeout_seconds": 30,
+    "provider_selection_policy": "locality_then_load",
+    "total_upload_requests": 1,
+    "total_upload_bytes": 1048576,
+    "peer_loads": [
+      {
+        "peer_id": "peer-a1",
+        "total_upload_requests": 1,
+        "total_upload_bytes": 1048576,
+        "last_transfer_at": "2026-04-26T21:34:56.398898"
+      },
+      {
+        "peer_id": "peer-a2",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      },
+      {
+        "peer_id": "peer-b1",
+        "total_upload_requests": 0,
+        "total_upload_bytes": 0,
+        "last_transfer_at": null
+      }
+    ],
+    "peer_reputations": []
+  },
+  "generated_from": {
+    "request_profiles": [],
+    "churn_profiles": [],
+    "steps": [
+      {
+        "action": "fetch",
+        "peer": "peer-a1",
+        "object_id": "partition-fallback-1"
+      },
+      {
+        "action": "wait",
+        "seconds": 4
+      },
+      {
+        "action": "disconnect",
+        "service": "coordinator"
+      },
+      {
+        "action": "wait",
+        "seconds": 2
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-b1",
+        "object_id": "partition-fallback-1"
+      },
+      {
+        "action": "fetch",
+        "peer": "peer-b1",
+        "object_id": "partition-new-object-1"
+      },
+      {
+        "action": "wait",
+        "seconds": 1
+      },
+      {
+        "action": "connect",
+        "service": "coordinator",
+        "wait_after_seconds": 3
+      },
+      {
+        "action": "wait",
+        "seconds": 11
+      }
+    ]
+  }
+}

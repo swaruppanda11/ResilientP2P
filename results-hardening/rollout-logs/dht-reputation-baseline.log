@@ -1,0 +1,145 @@
+
+>>> Running Scenario: Auth Enforcement Smoke Test
+[.] Resetting stack before scenario...
+[*] t=0.01s fetch auth-smoke-object via peer-a1
+[*] t=1.00s fetch auth-smoke-object via peer-a2
+[*] t=2.00s fetch auth-smoke-object via peer-b1
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/auth-enforcement-smoke-test.json
+
+>>> Running Scenario: Explicit Locality Smoke Test
+[.] Resetting stack before scenario...
+[*] t=0.01s fetch lecture-1-video via peer-a1
+[*] t=1.00s fetch lecture-1-video via peer-a2
+[*] t=2.00s fetch lecture-1-video via peer-b1
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/explicit-locality-smoke-test.json
+
+>>> Running Scenario: Course Burst Workload
+[.] Resetting stack before scenario...
+[*] t=0.26s fetch csci5673-assignment-1 via peer-a1
+[*] t=1.24s fetch csci5673-assignment-1 via peer-a2
+[*] t=1.42s fetch csci5673-assignment-1 via peer-a2
+[*] t=1.96s fetch csci5673-lecture-5 via peer-a1
+[*] t=2.35s fetch csci5673-lecture-5 via peer-a2
+[*] t=3.04s fetch csci5673-reading-2 via peer-a2
+[*] t=4.04s fetch csci5673-lecture-5 via peer-a1
+[*] t=4.29s fetch csci5673-assignment-1 via peer-a2
+[*] t=4.72s fetch csci5673-lecture-5 via peer-a1
+[*] t=4.83s fetch csci5673-lecture-5 via peer-a1
+[*] t=5.12s fetch csci5673-lecture-5 via peer-a1
+[*] t=5.41s fetch csci5673-lecture-5 via peer-a1
+[*] t=5.64s fetch csci5673-lecture-5 via peer-a1
+[*] t=5.73s fetch csci5673-assignment-1 via peer-a2
+[*] t=6.05s fetch campus-news via peer-b1
+[*] t=6.36s fetch csci5673-reading-2 via peer-a1
+[*] t=6.93s fetch csci5673-assignment-1 via peer-a2
+[*] t=8.26s fetch csci5673-assignment-1 via peer-b1
+[*] t=8.55s fetch csci5673-assignment-1 via peer-b1
+[*] t=11.63s fetch campus-news via peer-b1
+[*] t=12.20s fetch campus-news via peer-b1
+[*] t=14.11s fetch campus-news via peer-b1
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/course-burst-workload.json
+
+>>> Running Scenario: Burst With Independent Churn
+[.] Resetting stack before scenario...
+[*] t=0.97s fetch midterm-review via peer-b1
+[*] t=2.18s fetch midterm-review via peer-a2
+[*] t=2.37s fetch midterm-review via peer-a2
+[*] t=2.78s fetch practice-set via peer-b1
+[*] t=3.26s fetch midterm-review via peer-b1
+[*] t=3.43s fetch practice-set via peer-a1
+[*] t=4.05s fetch practice-set via peer-a1
+[*] t=4.10s fetch practice-set via peer-b1
+[*] t=4.98s fetch midterm-review via peer-b1
+[*] t=5.32s fetch practice-set via peer-a2
+[*] t=5.87s fetch practice-set via peer-a2
+[*] t=5.92s fetch midterm-review via peer-a1
+[!] t=7.44s kill peer-a2
+[*] t=9.71s fetch midterm-review via peer-a2
+[*] t=9.78s fetch practice-set via peer-a1
+[*] t=9.88s fetch midterm-review via peer-a2
+[*] t=9.89s fetch practice-set via peer-a1
+[*] t=9.92s fetch midterm-review via peer-b1
+[*] t=11.33s fetch practice-set via peer-a1
+[*] t=12.07s fetch midterm-review via peer-b1
+[*] t=12.13s fetch midterm-review via peer-a2
+[+] t=13.44s restart peer-a2
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/burst-with-independent-churn.json
+
+>>> Running Scenario: Correlated Class Exit Churn
+[.] Resetting stack before scenario...
+[*] t=0.32s fetch project-demo via peer-a1
+[*] t=1.56s fetch project-demo via peer-a2
+[*] t=1.78s fetch project-demo via peer-a2
+[*] t=2.45s fetch lab-starter via peer-a1
+[*] t=3.80s fetch lab-starter via peer-a2
+[*] t=5.06s fetch project-demo via peer-a1
+[*] t=5.36s fetch project-demo via peer-a2
+[*] t=5.89s fetch lab-starter via peer-a1
+[*] t=6.04s fetch lab-starter via peer-a1
+[*] t=6.40s fetch lab-starter via peer-a1
+[*] t=6.77s fetch project-demo via peer-a1
+[*] t=7.16s fetch project-demo via peer-a2
+[*] t=10.84s fetch project-demo via peer-b1
+[!] t=11.05s kill peer-a1
+[!] t=13.33s kill peer-a2
+[*] t=15.63s fetch project-demo via peer-a2
+[*] t=15.71s fetch department-calendar via peer-a1
+[*] t=15.72s fetch project-demo via peer-b1
+[*] t=15.82s fetch project-demo via peer-b1
+[+] t=17.00s restart peer-a1
+[+] t=46.86s restart peer-a2
+[*] t=77.06s fetch project-demo via peer-b1
+[*] t=77.17s fetch project-demo via peer-a2
+[*] t=77.39s fetch project-demo via peer-b1
+[*] t=77.43s fetch project-demo via peer-a2
+[*] t=77.46s fetch project-demo via peer-b1
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/correlated-class-exit-churn.json
+
+>>> Running Scenario: DHT Failure Fallback Smoke Test
+[.] Resetting stack before scenario...
+[*] t=0.01s fetch fallback-smoke-1 via peer-a1
+[!] t=1.00s stop service dht-bootstrap
+[*] t=3.30s fetch fallback-smoke-1 via peer-b1
+[*] t=3.52s fetch fallback-new-object-1 via peer-b1
+[+] t=4.00s restart service dht-bootstrap
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/dht-failure-fallback-smoke-test.json
+
+>>> Running Scenario: DHT Partition Fallback Test
+[.] Resetting stack before scenario...
+[*] t=0.01s fetch partition-fallback-1 via peer-a1
+[!] t=1.00s disconnect service dht-bootstrap
+[*] t=2.00s fetch partition-fallback-1 via peer-b1
+[*] t=2.21s fetch partition-new-object-1 via peer-b1
+[+] t=3.00s reconnect service dht-bootstrap
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/dht-partition-fallback-test.json
+
+>>> Running Scenario: DHT Timeout Fallback Test
+[.] Resetting stack before scenario...
+[*] t=0.01s fetch timeout-fallback-1 via peer-a1
+[!] t=1.00s delay service peer-a1 by 1200ms
+[*] t=2.00s fetch timeout-fallback-1 via peer-b1
+[*] t=11.59s fetch timeout-new-object-1 via peer-b1
+[+] t=12.32s clear delay for service peer-a1
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/dht-timeout-fallback-test.json
+
+>>> Running Scenario: Dynamic Object Explicit Invalidation
+[.] Resetting stack before scenario...
+[*] t=0.01s fetch dynamic-syllabus via peer-a1
+[*] t=1.00s fetch dynamic-syllabus via peer-a2
+[!] t=2.00s invalidate dynamic-syllabus
+[*] t=3.00s fetch dynamic-syllabus via peer-b1
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/dynamic-object-explicit-invalidation.json
+
+>>> Running Scenario: TTL Expiry Revalidation
+[.] Resetting stack before scenario...
+[*] t=0.01s fetch ttl-announcement via peer-a1
+[*] t=4.00s fetch ttl-announcement via peer-a2
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/ttl-expiry-revalidation.json
+
+>>> Running Scenario: Prefix Invalidation Smoke Test
+[.] Resetting stack before scenario...
+[*] t=0.01s fetch mutable-course-unit-1 via peer-a1
+[*] t=0.33s fetch mutable-course-unit-2 via peer-a2
+[!] t=1.00s invalidate prefix mutable-course-
+[*] t=2.00s fetch mutable-course-unit-1 via peer-b1
+[+] Wrote results to /Users/swaruppanda/Desktop/Projects/ResilientP2P/p2p-dht/experiments/results-rollout-reputation/prefix-invalidation-smoke-test.json
